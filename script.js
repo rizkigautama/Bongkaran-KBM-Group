@@ -180,7 +180,7 @@ uploadForm.addEventListener('submit', async (e) => {
     }
 
     // ⚠️ PENTING: GANTI URL DI BAWAH INI DENGAN URL WEB APP KAMU! ⚠️
-    const scriptUrl = 'https://script.google.com/a/macros/klinikbungamelati.com/s/AKfycbxZ0eI-dCuqp3cSHy5VoXNFx7YjArmwJvIYDD8NFq1M/dev';
+    const scriptUrl = 'https://script.google.com/a/macros/klinikbungamelati.com/s/AKfycbzkkvXeopYcLv3SO3lbYMh7hWzUByx2zEDc3jRyGWLw-QaVjaoeaxauwqDx7nGBM_bVGA/exec';
     
     const submitBtn = uploadForm.querySelector('button[type="submit"]');
     const originalBtnText = submitBtn.innerText;
