@@ -181,4 +181,37 @@ uploadForm.addEventListener('submit', (e) => {
     }, 5000);
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
-});
+})
+function doPost(e) {
+  try {
+    // Membaca data yang dikirim dari form web
+    var data = JSON.parse(e.postData.contents);
+    var fileData = data.fileData; 
+    var fileName = data.fileName;
+    var mimeType = data.mimeType;
+    
+    // FOLDER ID DARI DRIVE BERSAMA KLINIK BUNGA MELATI
+    var folderId = "18K8b_9dNK3v158SHhT7hkxv7jMwjDX-i";
+    var folder = DriveApp.getFolderById(folderId);
+    
+    // Memproses data foto (Base64) kembali menjadi file asli
+    var base64 = fileData.split(',')[1];
+    var blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType, fileName);
+    
+    // Menyimpan file ke dalam folder Drive Bersama
+    var file = folder.createFile(blob);
+    
+    // Mengembalikan respons berhasil ke web
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "success", 
+      "message": "Foto berhasil diunggah ke Drive Bersama",
+      "url": file.getUrl()
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "error", 
+      "message": error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+};
