@@ -206,11 +206,12 @@ uploadForm.addEventListener('submit', async (e) => {
             };
 
             // Mengirim data ke Google Apps Script (Dengan aturan anti-CORS)
+            // Mengirim data ke Google Apps Script (Bypass CORS)
             await fetch(scriptUrl, {
                 method: 'POST',
-                redirect: 'follow', // Melewati pengalihan
+                mode: 'no-cors', // Ini adalah kunci untuk mengabaikan blokir browser
                 headers: {
-                    "Content-Type": "text/plain;charset=utf-8", // Menghindari blokir browser
+                    "Content-Type": "text/plain", 
                 },
                 body: JSON.stringify(payload)
             });
