@@ -138,12 +138,19 @@ function updatePreview(category) {
     if (category === 'before') {
         containerId = 'previewContainerBefore';
     } else if (category === 'proses') {
-        containerId = 'previewContainerProses';
+        containerId = 'previewContainerProses'; // PASTIKAN NAMA ID INI SAMA DENGAN DI HTML
     } else {
         containerId = 'previewContainerAfter';
     }
     
     const previewContainer = document.getElementById(containerId);
+    
+    // Tambahkan pengaman agar tidak error jika containerId tidak ditemukan
+    if (!previewContainer) {
+        console.error("Preview container tidak ditemukan untuk kategori:", category);
+        return; 
+    }
+    
     previewContainer.innerHTML = '';
     
     capturedFiles[category].forEach((blob, index) => {
