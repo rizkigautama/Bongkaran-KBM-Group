@@ -138,14 +138,13 @@ function updatePreview(category) {
     if (category === 'before') {
         containerId = 'previewContainerBefore';
     } else if (category === 'proses') {
-        containerId = 'previewContainerProses'; // PASTIKAN NAMA ID INI SAMA DENGAN DI HTML
+        containerId = 'previewContainerProses';
     } else {
         containerId = 'previewContainerAfter';
     }
     
     const previewContainer = document.getElementById(containerId);
     
-    // Tambahkan pengaman agar tidak error jika containerId tidak ditemukan
     if (!previewContainer) {
         console.error("Preview container tidak ditemukan untuk kategori:", category);
         return; 
@@ -171,7 +170,7 @@ window.removeFile = function(category, index) {
 }
 
 // =======================================================================
-// FUNGSI UPLOAD TO GOOGLE DRIVE
+// FUNGSI UPLOAD & BUAT DOKUMEN KE GOOGLE DRIVE
 // =======================================================================
 
 // Fungsi bantuan untuk mengubah file (Blob) menjadi format Base64
@@ -196,44 +195,50 @@ uploadForm.addEventListener('submit', async (e) => {
         return;
     }
 
-    // ⚠️ PENTING: URL! ⚠️
+    // ⚠️ URL Web App
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbwB1s5v1tpW-z-6-Ij34LEwkE0SxYU1ycnKuIXNaCsEpDFRMdtwzTLHt8fBtR50VCUk/exec';
     
     const submitBtn = uploadForm.querySelector('button[type="submit"]');
     const originalBtnText = submitBtn.innerText;
-    submitBtn.innerText = 'Mengunggah Foto... Mohon Tunggu';
+    submitBtn.innerText = 'Menyusun Laporan Dokumen... Mohon Tunggu';
     submitBtn.disabled = true;
 
     try {
-        const allFiles = [
-            ...capturedFiles.before.map(blob => ({blob: blob, type: 'Before'})),
-            ...capturedFiles.proses.map(blob => ({blob: blob, type: 'Proses'})),
-            ...capturedFiles.after.map(blob => ({blob: blob, type: 'After'}))
-        ];
+        // 1. Ambil semua teks dari input HTML
+        const dataPetugas = document.getElementById('petugas').value;
+        const dataJabatan = document.getElementById('jabatan').value;
+        const dataTanggal = document.getElementById('tanggal').value;
+        const dataLokasi = document.getElementById('lokasi').value;
+        const dataKeterangan = document.getElementById('keterangan').value;
 
-        const lokasi = document.getElementById('lokasi').value.replace(/\s+/g, '_');
+        // 2. Ubah semua gambar menjadi format Base64 Array
+        const beforeB64 = await Promise.all(capturedFiles.before.map(blob => blobToBase64(blob)));
+        const prosesB64 = await Promise.all(capturedFiles.proses.map(blob => blobToBase64(blob)));
+        const afterB64 = await Promise.all(capturedFiles.after.map(blob => blobToBase64(blob)));
 
-        for (let i = 0; i < allFiles.length; i++) {
-            const base64Data = await blobToBase64(allFiles[i].blob);
-            const timestamp = Date.now();
-            
-            const payload = {
-                fileName: `Bongkaran_${lokasi}_${allFiles[i].type}_${timestamp}.jpg`,
-                mimeType: 'image/jpeg',
-                fileData: base64Data
-            };
+        // 3. Susun semua data (Teks & Gambar) menjadi 1 paket pengiriman (Payload)
+        const payload = {
+            petugas: dataPetugas,
+            jabatan: dataJabatan,
+            tanggal: dataTanggal,
+            lokasi: dataLokasi,
+            keterangan: dataKeterangan,
+            beforeImages: beforeB64,
+            prosesImages: prosesB64,
+            afterImages: afterB64
+        };
 
-            // Mengirim data ke Google Apps Script (Bypass CORS)
-            await fetch(scriptUrl, {
-                method: 'POST',
-                mode: 'no-cors', // Ini adalah kunci untuk mengabaikan blokir browser
-                headers: {
-                    "Content-Type": "text/plain", 
-                },
-                body: JSON.stringify(payload)
-            });
-        }
+        // 4. Kirim paket laporan ke Google Apps Script (Satu kali klik, langsung jadi 1 dokumen)
+        await fetch(scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                "Content-Type": "text/plain", 
+            },
+            body: JSON.stringify(payload)
+        });
 
+        // 5. Bersihkan form jika selesai
         successAlert.style.display = 'block';
         uploadForm.reset();
         
@@ -252,7 +257,7 @@ uploadForm.addEventListener('submit', async (e) => {
 
     } catch (error) {
         console.error('Error saat upload:', error);
-        alert('Terjadi kesalahan saat mengunggah foto. Silakan cek console browser (F12).');
+        alert('Terjadi kesalahan saat menyusun laporan dokumen. Silakan cek koneksi atau console browser (F12).');
     } finally {
         submitBtn.innerText = originalBtnText;
         submitBtn.disabled = false;
