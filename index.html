@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Pekerjaan Bongkaran - Klinik Bunga Melati</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <img src="KBM.png" alt="Logo Klinik Bunga Melati">
+            <h1>Klinik Bunga Melati</h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2 class="card-title">Laporan Pekerjaan Bongkaran</h2>
+            <p class="card-subtitle">Gunakan kamera langsung untuk mengambil dokumentasi Before & After dengan timemark koordinat GPS.</p>
+
+            <div id="successAlert" class="alert alert-success">
+                Laporan pekerjaan bongkaran berhasil dikirim!
+            </div>
+
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="petugas">Nama Petugas / Pelapor</label>
+                    <input type="text" id="petugas" name="petugas" required placeholder="Masukkan nama lengkap...">
+                </div>
+
+                <!-- Kolom Jabatan Baru -->
+                <div class="form-group">
+                    <label for="jabatan">Jabatan</label>
+                    <select id="jabatan" name="jabatan" required>
+                        <option value="" disabled selected>Pilih Jabatan...</option>
+                        <option value="Pendaftaran">Pendaftaran</option>
+                        <option value="Sarpras">Sarpras</option>
+                        <option value="Rekam Medis">Rekam Medis</option>
+                        <option value="Perawat">Perawat</option>
+                        <option value="Analis Lab">Analis Lab</option>
+                        <option value="PIC">PIC</option>
+                        <option value="Bidan">Bidan</option>
+                        <option value="Dokter Umum">Dokter Umum</option>
+                        <option value="Dokter Gigi">Dokter Gigi</option>
+                        <option value="HRD">HRD</option>
+                        <option value="Supervisor">Supervisor</option>
+                        <option value="Farmasi">Farmasi</option>
+                        <option value="Apoteker">Apoteker</option>
+                        <option value="Keuangan">Keuangan</option>
+                        <option value="Admin Claim">Admin Claim</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Pemeliharaan">Pemeliharaan</option>
+                        <option value="House Keeping">House Keeping</option>
+                        <option value="Security">Security</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tanggal">Tanggal Pelaksanaan</label>
+                    <input type="date" id="tanggal" name="tanggal" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="lokasi">Cabang Klinik (Lokasi Bongkaran)</label>
+                    <select id="lokasi" name="lokasi" required>
+                        <option value="" disabled selected>Pilih Lokasi...</option>
+                        <option value="KBM Jaksa Agung">KBM Jaksa Agung</option>
+                        <option value="KBM Panjaitan">KBM Panjaitan</option>
+                        <option value="KBM Pajajaran">KBM Pajajaran</option>
+                        <option value="KBM Pasuruan">KBM Pasuruan</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="keterangan">Keterangan Pekerjaan</label>
+                    <textarea id="keterangan" name="keterangan" required placeholder="Deskripsikan detail progres atau hasil bongkaran..."></textarea>
+                </div>
+
+                <!-- Dokumentasi Foto Kamera Langsung (Before & After) -->
+                <div class="form-group">
+                    <label>Dokumentasi Kamera </label>
+                    
+                    <!-- Foto Sebelum (Before) -->
+                    <div class="photo-section">
+                        <label class="photo-label">Foto Sebelum (Before)</label>
+                        <button type="button" class="btn-camera" onclick="openCamera('before')">📷 Ambil Foto Before</button>
+                        <div class="preview-container" id="previewContainerBefore"></div>
+                    </div>
+
+                    <!-- Foto Sesudah (After) -->
+                    <div class="photo-section">
+                        <label class="photo-label">Foto Sesudah (After)</label>
+                        <button type="button" class="btn-camera" onclick="openCamera('after')">📷 Ambil Foto After</button>
+                        <div class="preview-container" id="previewContainerAfter"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">Kirim Laporan</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Kamera -->
+    <div id="cameraModal" class="modal">
+        <div class="modal-content">
+            <h3>Ambil Dokumentasi Foto</h3>
+            <div class="video-container">
+                <video id="cameraStream" autoplay playsinline></video>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-capture" id="captureBtn">Potret</button>
+                <button type="button" class="btn-close" onclick="closeCamera()">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        &copy; Rizki Gautama 2026 Klinik Bunga Melati. Seluruh hak cipta dilindungi.
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
