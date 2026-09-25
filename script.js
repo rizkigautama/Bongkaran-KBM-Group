@@ -1,5 +1,6 @@
 let capturedFiles = {
     before: [],
+    proses: [],
     after: []
 };
 
@@ -133,7 +134,16 @@ function processSnapshot(latText, lonText) {
 }
 
 function updatePreview(category) {
-    const previewContainer = document.getElementById(category === 'before' ? 'previewContainerBefore' : 'previewContainerAfter');
+    let containerId = '';
+    if (category === 'before') {
+        containerId = 'previewContainerBefore';
+    } else if (category === 'proses') {
+        containerId = 'previewContainerProses';
+    } else {
+        containerId = 'previewContainerAfter';
+    }
+    
+    const previewContainer = document.getElementById(containerId);
     previewContainer.innerHTML = '';
     
     capturedFiles[category].forEach((blob, index) => {
@@ -173,9 +183,9 @@ const successAlert = document.getElementById('successAlert');
 uploadForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // Validasi Foto: Wajib ada Before dan After
-    if (capturedFiles.before.length === 0 || capturedFiles.after.length === 0) {
-        alert('Laporan Ditolak: Harap lengkapi KEDUA dokumentasi foto (Before DAN After).');
+    // Validasi Foto: Wajib ada Before, Proses, dan After
+    if (capturedFiles.before.length === 0 || capturedFiles.proses.length === 0 || capturedFiles.after.length === 0) {
+        alert('Laporan Ditolak: Harap lengkapi KETIGA dokumentasi foto (Before, Proses, DAN After).');
         return;
     }
 
@@ -190,6 +200,7 @@ uploadForm.addEventListener('submit', async (e) => {
     try {
         const allFiles = [
             ...capturedFiles.before.map(blob => ({blob: blob, type: 'Before'})),
+            ...capturedFiles.proses.map(blob => ({blob: blob, type: 'Proses'})),
             ...capturedFiles.after.map(blob => ({blob: blob, type: 'After'}))
         ];
 
@@ -205,7 +216,6 @@ uploadForm.addEventListener('submit', async (e) => {
                 fileData: base64Data
             };
 
-            // Mengirim data ke Google Apps Script (Dengan aturan anti-CORS)
             // Mengirim data ke Google Apps Script (Bypass CORS)
             await fetch(scriptUrl, {
                 method: 'POST',
@@ -221,8 +231,10 @@ uploadForm.addEventListener('submit', async (e) => {
         uploadForm.reset();
         
         capturedFiles.before = [];
+        capturedFiles.proses = [];
         capturedFiles.after = [];
         document.getElementById('previewContainerBefore').innerHTML = '';
+        document.getElementById('previewContainerProses').innerHTML = '';
         document.getElementById('previewContainerAfter').innerHTML = '';
 
         setTimeout(() => {

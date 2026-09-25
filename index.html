@@ -18,7 +18,7 @@
     <div class="container">
         <div class="card">
             <h2 class="card-title">Laporan Pekerjaan Bongkaran</h2>
-            <p class="card-subtitle">Gunakan kamera langsung untuk mengambil dokumentasi Before & After dengan timemark koordinat GPS.</p>
+            <p class="card-subtitle">Gunakan kamera langsung untuk mengambil dokumentasi Before, Proses, & After dengan timemark koordinat GPS.</p>
 
             <div id="successAlert" class="alert alert-success">
                 Laporan pekerjaan bongkaran berhasil dikirim!
@@ -79,7 +79,7 @@
                     <textarea id="keterangan" name="keterangan" required placeholder="Deskripsikan detail progres atau hasil bongkaran..."></textarea>
                 </div>
 
-                <!-- Dokumentasi Foto Kamera Langsung (Before & After) -->
+                <!-- Dokumentasi Foto Kamera Langsung (Before, Proses, & After) -->
                 <div class="form-group">
                     <label>Dokumentasi Kamera </label>
                     
@@ -90,8 +90,15 @@
                         <div class="preview-container" id="previewContainerBefore"></div>
                     </div>
 
+                    <!-- Foto Proses (Progress) - INI ADALAH TAMBAHAN BARU -->
+                    <div class="photo-section" style="margin-top: 15px;">
+                        <label class="photo-label">Foto Proses (Progress)</label>
+                        <button type="button" class="btn-camera" onclick="openCamera('proses')">📷 Ambil Foto Proses</button>
+                        <div class="preview-container" id="previewContainerProses"></div>
+                    </div>
+
                     <!-- Foto Sesudah (After) -->
-                    <div class="photo-section">
+                    <div class="photo-section" style="margin-top: 15px;">
                         <label class="photo-label">Foto Sesudah (After)</label>
                         <button type="button" class="btn-camera" onclick="openCamera('after')">📷 Ambil Foto After</button>
                         <div class="preview-container" id="previewContainerAfter"></div>
