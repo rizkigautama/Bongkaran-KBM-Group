@@ -154,7 +154,7 @@ window.removeFile = function(category, index) {
 }
 
 // =======================================================================
-// FUNGSI UPLOAD KE GOOGLE DRIVE
+// FUNGSI UPLOAD TO GOOGLE DRIVE
 // =======================================================================
 
 // Fungsi bantuan untuk mengubah file (Blob) menjadi format Base64
@@ -179,7 +179,7 @@ uploadForm.addEventListener('submit', async (e) => {
         return;
     }
 
-    // ⚠️ PENTING: GANTI URL DI BAWAH INI DENGAN URL WEB APP KAMU! ⚠️
+    // ⚠️ PENTING: URL! ⚠️
     const scriptUrl = 'https://script.google.com/macros/s/AKfycbwB1s5v1tpW-z-6-Ij34LEwkE0SxYU1ycnKuIXNaCsEpDFRMdtwzTLHt8fBtR50VCUk/exec';
     
     const submitBtn = uploadForm.querySelector('button[type="submit"]');
