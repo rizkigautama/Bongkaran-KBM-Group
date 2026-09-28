@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Script Pengaman (Auth Guard): Cek login sebelum halaman dimuat -->
+    <script>
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Pekerjaan Bongkaran - Klinik Bunga Melati</title>
@@ -8,11 +15,15 @@
 </head>
 <body>
 
-    <header>
+    <header style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
         <div class="logo-container">
             <img src="KBM.png" alt="Logo Klinik Bunga Melati">
             <h1>Klinik Bunga Melati</h1>
         </div>
+        <!-- Tombol Logout -->
+        <button type="button" onclick="logout()" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9rem;">
+            🚪 Keluar / Logout
+        </button>
     </header>
 
     <div class="container">
@@ -90,7 +101,7 @@
                         <div class="preview-container" id="previewContainerBefore"></div>
                     </div>
 
-                    <!-- Foto Proses (Progress) - INI ADALAH TAMBAHAN BARU -->
+                    <!-- Foto Proses (Progress) -->
                     <div class="photo-section" style="margin-top: 15px;">
                         <label class="photo-label">Foto Proses (Progress)</label>
                         <button type="button" class="btn-camera" onclick="openCamera('proses')">📷 Ambil Foto Proses</button>
@@ -128,6 +139,18 @@
         &copy; Rizki Gautama 2026 Klinik Bunga Melati. Seluruh hak cipta dilindungi.
     </footer>
 
+    <!-- Script Utama Aplikasi -->
     <script src="script.js"></script>
+
+    <!-- Script Fungsi Logout -->
+    <script>
+        function logout() {
+            if (confirm('Apakah Anda yakin ingin keluar?')) {
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('userEmail');
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
 </body>
 </html>

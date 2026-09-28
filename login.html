@@ -35,18 +35,21 @@
             max-width: 150px;
             margin-bottom: 10px;
         }
+        /* Ikon berada di sebelah kiri input, background diganti warna putih agar menyatu dengan input */
         .input-group-text {
-            background-color: #e9ecef;
-            border-left: 0;
+            background-color: #fff;
+            border-right: 0;
+            color: #6c757d; 
         }
         .form-control {
-            border-right: 0;
-            background-color: #f8f9fa;
-        }
-        .form-control:focus {
-            box-shadow: none;
-            border-color: #ced4da;
+            border-left: 0;
             background-color: #fff;
+        }
+        /* Memberikan efek fokus saat input diklik */
+        .input-group:focus-within .input-group-text,
+        .input-group:focus-within .form-control {
+             border-color: #86b7fe;
+             box-shadow: none;
         }
         .btn-masuk {
             background-color: #28a745;
@@ -78,19 +81,19 @@
 
         <h6 class="text-center mb-4 fw-bold">Halaman Login</h6>
 
-        <!-- Form Login -->
-        <form action="proses_login.php" method="POST">
+        <!-- Form Login (Action dihilangkan karena menggunakan JavaScript) -->
+        <form id="loginForm">
             
             <!-- Input Email -->
             <div class="input-group mb-3">
-                <input type="email" name="email" class="form-control" placeholder="email@domain.com" required>
-                <span class="input-group-text"><i class="fas fa-user text-secondary"></i></span>
+                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                <input type="email" id="email" class="form-control" placeholder="email@domain.com" required>
             </div>
 
             <!-- Input Password -->
             <div class="input-group mb-3">
-                <input type="password" name="password" id="password" class="form-control" placeholder="••••••••" required>
-                <span class="input-group-text"><i class="fas fa-lock text-secondary"></i></span>
+                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                <input type="password" id="password" class="form-control" placeholder="••••••••" required>
             </div>
 
             <!-- Tampilkan Sandi & Lupa Sandi -->
@@ -104,25 +107,63 @@
                 <a href="#" class="text-decoration-none">Lupa Kata Sandi?</a>
             </div>
 
+            <!-- Pesan Error (Tersembunyi secara default) -->
+            <div id="errorMessage" class="alert alert-danger d-none p-2 mb-3 text-center" style="font-size: 0.9rem;" role="alert">
+                Email atau Password salah!
+            </div>
+
             <!-- Tombol Masuk -->
             <button type="submit" class="btn btn-masuk text-white w-100">Masuk</button>
         </form>
 
         <!-- Footer -->
         <div class="text-center mt-4 footer-text">
-            Hak Cipta &copy; 2023 - 2024 Bongkaran.<br>
+            Hak Cipta &copy; Rizki Gautama 2026 Bongkaran KBM.<br>
             <a href="#">Aplikasi Bongkaran v1.0</a>
         </div>
     </div>
 
-    <!-- Script untuk fitur 'Tampilkan kata sandi' -->
+    <!-- Script Logika -->
     <script>
+        // 1. Fitur 'Tampilkan kata sandi'
         document.getElementById('showPassword').addEventListener('change', function() {
             const passwordInput = document.getElementById('password');
             if (this.checked) {
                 passwordInput.type = 'text';
             } else {
                 passwordInput.type = 'password';
+            }
+        });
+
+        // 2. Logika Verifikasi Login
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            e.preventDefault(); // Mencegah form melakukan reload halaman
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+
+            // --- KREDENSIAL LOGIN SEMENTARA ---
+            // Ganti email dan password ini sesuai keinginan Anda
+            const emailBenar = "admin@bongkaran.com";
+            const passwordBenar = "admin123";
+
+            if (email === emailBenar && password === passwordBenar) {
+                // Sembunyikan pesan error jika sebelumnya muncul
+                errorMessage.classList.add('d-none');
+                
+                // Simpan status login di Local Storage
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userEmail', email);
+
+                // Tampilkan notifikasi (opsional, bisa dihapus)
+                alert('Login berhasil! Mengarahkan ke aplikasi...');
+                
+                // Alihkan (Redirect) ke halaman utama aplikasi (index.html)
+                window.location.href = 'index.html'; 
+            } else {
+                // Tampilkan pesan error jika salah
+                errorMessage.classList.remove('d-none');
             }
         });
     </script>

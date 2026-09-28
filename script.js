@@ -11,6 +11,16 @@ const modal = document.getElementById('cameraModal');
 const videoElement = document.getElementById('cameraStream');
 const captureBtn = document.getElementById('captureBtn');
 
+// Otomatis isi nama petugas berdasarkan email yang login saat halaman dimuat
+document.addEventListener('DOMContentLoaded', () => {
+    const userEmail = localStorage.getItem('userEmail');
+    const petugasInput = document.getElementById('petugas');
+    if (userEmail && petugasInput && !petugasInput.value) {
+        // Mengisi nilai default email/petugas
+        petugasInput.value = userEmail;
+    }
+});
+
 async function openCamera(category) {
     // Validasi: Wajib pilih lokasi dulu sebelum buka kamera agar watermark lokasi valid
     const lokasiDropdown = document.getElementById('lokasi');
@@ -186,80 +196,93 @@ const blobToBase64 = (blob) => {
 const uploadForm = document.getElementById('uploadForm');
 const successAlert = document.getElementById('successAlert');
 
-uploadForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // Validasi Foto: Wajib ada Before, Proses, dan After
-    if (capturedFiles.before.length === 0 || capturedFiles.proses.length === 0 || capturedFiles.after.length === 0) {
-        alert('Laporan Ditolak: Harap lengkapi KETIGA dokumentasi foto (Before, Proses, DAN After).');
-        return;
-    }
-
-    // ⚠️ URL Web App
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwB1s5v1tpW-z-6-Ij34LEwkE0SxYU1ycnKuIXNaCsEpDFRMdtwzTLHt8fBtR50VCUk/exec';
-    
-    const submitBtn = uploadForm.querySelector('button[type="submit"]');
-    const originalBtnText = submitBtn.innerText;
-    submitBtn.innerText = 'Menyusun Laporan Dokumen... Mohon Tunggu';
-    submitBtn.disabled = true;
-
-    try {
-        // 1. Ambil semua teks dari input HTML
-        const dataPetugas = document.getElementById('petugas').value;
-        const dataJabatan = document.getElementById('jabatan').value;
-        const dataTanggal = document.getElementById('tanggal').value;
-        const dataLokasi = document.getElementById('lokasi').value;
-        const dataKeterangan = document.getElementById('keterangan').value;
-
-        // 2. Ubah semua gambar menjadi format Base64 Array
-        const beforeB64 = await Promise.all(capturedFiles.before.map(blob => blobToBase64(blob)));
-        const prosesB64 = await Promise.all(capturedFiles.proses.map(blob => blobToBase64(blob)));
-        const afterB64 = await Promise.all(capturedFiles.after.map(blob => blobToBase64(blob)));
-
-        // 3. Susun semua data (Teks & Gambar) menjadi 1 paket pengiriman (Payload)
-        const payload = {
-            petugas: dataPetugas,
-            jabatan: dataJabatan,
-            tanggal: dataTanggal,
-            lokasi: dataLokasi,
-            keterangan: dataKeterangan,
-            beforeImages: beforeB64,
-            prosesImages: prosesB64,
-            afterImages: afterB64
-        };
-
-        // 4. Kirim paket laporan ke Google Apps Script (Satu kali klik, langsung jadi 1 dokumen)
-        await fetch(scriptUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: {
-                "Content-Type": "text/plain", 
-            },
-            body: JSON.stringify(payload)
-        });
-
-        // 5. Bersihkan form jika selesai
-        successAlert.style.display = 'block';
-        uploadForm.reset();
+if (uploadForm) {
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        capturedFiles.before = [];
-        capturedFiles.proses = [];
-        capturedFiles.after = [];
-        document.getElementById('previewContainerBefore').innerHTML = '';
-        document.getElementById('previewContainerProses').innerHTML = '';
-        document.getElementById('previewContainerAfter').innerHTML = '';
+        // Validasi Foto: Wajib ada Before, Proses, dan After
+        if (capturedFiles.before.length === 0 || capturedFiles.proses.length === 0 || capturedFiles.after.length === 0) {
+            alert('Laporan Ditolak: Harap lengkapi KETIGA dokumentasi foto (Before, Proses, DAN After).');
+            return;
+        }
 
-        setTimeout(() => {
-            successAlert.style.display = 'none';
-        }, 5000);
+        // URL Web App Google Apps Script
+        const scriptUrl = 'https://script.google.com/macros/s/AKfycbwB1s5v1tpW-z-6-Ij34LEwkE0SxYU1ycnKuIXNaCsEpDFRMdtwzTLHt8fBtR50VCUk/exec';
+        
+        const submitBtn = uploadForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerText;
+        submitBtn.innerText = 'Menyusun Laporan Dokumen... Mohon Tunggu';
+        submitBtn.disabled = true;
 
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        try {
+            // 1. Ambil semua teks dari input HTML
+            const dataPetugas = document.getElementById('petugas').value;
+            const dataJabatan = document.getElementById('jabatan').value;
+            const dataTanggal = document.getElementById('tanggal').value;
+            const dataLokasi = document.getElementById('lokasi').value;
+            const dataKeterangan = document.getElementById('keterangan').value;
 
-    } catch (error) {
-        console.error('Error saat upload:', error);
-        alert('Terjadi kesalahan saat menyusun laporan dokumen. Silakan cek koneksi atau console browser (F12).');
-    } finally {
-        submitBtn.innerText = originalBtnText;
-        submitBtn.disabled = false;
+            // 2. Ubah semua gambar menjadi format Base64 Array
+            const beforeB64 = await Promise.all(capturedFiles.before.map(blob => blobToBase64(blob)));
+            const prosesB64 = await Promise.all(capturedFiles.proses.map(blob => blobToBase64(blob)));
+            const afterB64 = await Promise.all(capturedFiles.after.map(blob => blobToBase64(blob)));
+
+            // 3. Susun semua data (Teks & Gambar) menjadi 1 paket pengiriman (Payload)
+            const payload = {
+                petugas: dataPetugas,
+                jabatan: dataJabatan,
+                tanggal: dataTanggal,
+                lokasi: dataLokasi,
+                keterangan: dataKeterangan,
+                beforeImages: beforeB64,
+                prosesImages: prosesB64,
+                afterImages: afterB64
+            };
+
+            // 4. Kirim paket laporan ke Google Apps Script
+            await fetch(scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    "Content-Type": "text/plain", 
+                },
+                body: JSON.stringify(payload)
+            });
+
+            // 5. Bersihkan form jika selesai
+            successAlert.style.display = 'block';
+            uploadForm.reset();
+            
+            capturedFiles.before = [];
+            capturedFiles.proses = [];
+            capturedFiles.after = [];
+            document.getElementById('previewContainerBefore').innerHTML = '';
+            document.getElementById('previewContainerProses').innerHTML = '';
+            document.getElementById('previewContainerAfter').innerHTML = '';
+
+            setTimeout(() => {
+                successAlert.style.display = 'none';
+            }, 5000);
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        } catch (error) {
+            console.error('Error saat upload:', error);
+            alert('Terjadi kesalahan saat menyusun laporan dokumen. Silakan cek koneksi atau console browser (F12).');
+        } finally {
+            submitBtn.innerText = originalBtnText;
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+// =======================================================================
+// FUNGSI LOGOUT (DIHUBUNGKAN KE TOMBOL LOGOUT DI INDEX.HTML)
+// =======================================================================
+window.logout = function() {
+    if (confirm('Apakah Anda yakin ingin keluar dari aplikasi?')) {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userEmail');
+        window.location.href = 'login.html';
     }
-});
+};
