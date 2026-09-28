@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const petugasInput = document.getElementById('petugas');
     if (userEmail && petugasInput && !petugasInput.value) {
         // Mengisi nilai default email/petugas
-        petugasInput.value = userEmail;
+        petugasInput.value = nama petugas;
     }
 });
 
