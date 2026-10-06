@@ -1,114 +1,145 @@
-let capturedFiles = {
-    before: [],
-    proses: [],
-    after: []
+// =======================================================================
+// KONFIGURASI BACKEND & STATE APLIKASI
+// =======================================================================
+// Ganti URL ini sesuai tempat backend kamu berjalan:
+// - Pengujian Lokal: 'http://127.0.0.1:8000/api/laporan'
+// - Online (Render):  'https://backend-klinik.onrender.com/api/laporan'
+const API_URL = 'http://127.0.0.1:8000/api/laporan';
+
+// Pengelolaan State Terpusat
+const state = {
+    capturedFiles: {
+        before: [],
+        proses: [],
+        after: []
+    },
+    currentCategory: '',
+    mediaStream: null
 };
 
-let currentCategory = '';
-let mediaStream = null;
-
+// Elemen DOM
 const modal = document.getElementById('cameraModal');
 const videoElement = document.getElementById('cameraStream');
 const captureBtn = document.getElementById('captureBtn');
+const uploadForm = document.getElementById('uploadForm');
+const successAlert = document.getElementById('successAlert');
 
-// Otomatis isi nama petugas berdasarkan email yang login saat halaman dimuat
-document.addEventListener('DOMContentLoaded', () => {
-    const userEmail = localStorage.getItem('userEmail');
-    const petugasInput = document.getElementById('petugas');
-    if (userEmail && petugasInput && !petugasInput.value) {
-        // Mengisi nilai default email/petugas
-        petugasInput.value = nama petugas;
-    }
-});
+// =======================================================================
+// MANAJEMEN KAMERA
+// =======================================================================
 
+/**
+ * Membuka kamera perangkat
+ */
 async function openCamera(category) {
-    // Validasi: Wajib pilih lokasi dulu sebelum buka kamera agar watermark lokasi valid
     const lokasiDropdown = document.getElementById('lokasi');
-    if (!lokasiDropdown.value) {
+    if (!lokasiDropdown || !lokasiDropdown.value) {
         alert('Harap pilih "Cabang Klinik (Lokasi Bongkaran)" terlebih dahulu sebelum mengambil foto!');
-        lokasiDropdown.focus();
+        if (lokasiDropdown) lokasiDropdown.focus();
         return;
     }
 
-    currentCategory = category;
+    state.currentCategory = category;
     modal.style.display = 'flex';
+
     try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
+        state.mediaStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'environment' },
             audio: false
         });
-        videoElement.srcObject = mediaStream;
+        videoElement.srcObject = state.mediaStream;
     } catch (err) {
+        console.error('Akses kamera gagal:', err);
         alert('Tidak dapat mengakses kamera. Pastikan izin kamera diaktifkan.');
         closeCamera();
     }
 }
 
+/**
+ * Mematikan kamera dan menutup modal
+ */
 function closeCamera() {
-    if (mediaStream) {
-        mediaStream.getTracks().forEach(track => track.stop());
-        mediaStream = null;
+    if (state.mediaStream) {
+        state.mediaStream.getTracks().forEach(track => track.stop());
+        state.mediaStream = null;
     }
     modal.style.display = 'none';
 }
 
-// Konversi Desimal Derajat ke DDM (Degrees Decimal Minutes)
+// =======================================================================
+// GEOLOKASI & WATERMARK CANVAS
+// =======================================================================
+
+/**
+ * Konversi Desimal Derajat ke DDM (Degrees Decimal Minutes)
+ */
 function convertToDDM(decimal, isLatitude) {
     const absolute = Math.abs(decimal);
     const degrees = Math.floor(absolute);
     const minutes = (absolute - degrees) * 60;
-    let direction = '';
-    if (isLatitude) {
-        direction = decimal >= 0 ? 'N' : 'S';
-    } else {
-        direction = decimal >= 0 ? 'E' : 'W';
-    }
+    const direction = isLatitude 
+        ? (decimal >= 0 ? 'N' : 'S') 
+        : (decimal >= 0 ? 'E' : 'W');
     return `${degrees}° ${minutes.toFixed(3)}' ${direction}`;
 }
 
-// Ambil Koordinat GPS lalu cetak ke Canvas dengan Timemark, DDM, dan Lokasi
+/**
+ * Listener Tombol Ambil Foto
+ */
 captureBtn.addEventListener('click', () => {
-    if (!mediaStream) return;
+    if (!state.mediaStream) return;
 
-    navigator.geolocation.getCurrentPosition((position) => {
-        const latDDM = convertToDDM(position.coords.latitude, true);
-        const lonDDM = convertToDDM(position.coords.longitude, false);
-        processSnapshot(latDDM, lonDDM);
-    }, (error) => {
-        // Fallback jika GPS tidak aktif/izin ditolak
-        processSnapshot("07° 00.000' S", "112° 00.000' E");
-    }, { enableHighAccuracy: true });
+    captureBtn.disabled = true;
+    const originalText = captureBtn.innerText;
+    captureBtn.innerText = 'Mendapatkan Lokasi...';
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const latDDM = convertToDDM(position.coords.latitude, true);
+            const lonDDM = convertToDDM(position.coords.longitude, false);
+            processSnapshot(latDDM, lonDDM);
+            resetCaptureBtn(originalText);
+        },
+        (error) => {
+            console.warn('GPS gagal/ditolak, menggunakan koordinat default:', error);
+            processSnapshot("07° 00.000' S", "112° 00.000' E");
+            resetCaptureBtn(originalText);
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+    );
 });
 
+function resetCaptureBtn(text) {
+    captureBtn.innerText = text;
+    captureBtn.disabled = false;
+}
+
+/**
+ * Mengambil snapshot dari video canvas & memberi watermark
+ */
 function processSnapshot(latText, lonText) {
     const canvas = document.createElement('canvas');
     canvas.width = videoElement.videoWidth || 1280;
     canvas.height = videoElement.videoHeight || 960;
     const ctx = canvas.getContext('2d');
 
+    // Gambar frame dari video ke canvas
     ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
-    // Ambil data Lokasi yang dipilih
-    const lokasiDropdown = document.getElementById('lokasi');
-    const selectedLokasi = lokasiDropdown.value;
+    const selectedLokasi = document.getElementById('lokasi').value;
 
-    // Format Tanggal MM/DD/YYYY & Waktu 24-hour
+    // Format Tanggal (MM/DD/YYYY) & Waktu (HH:mm:ss)
     const now = new Date();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const yyyy = now.getFullYear();
-    const dateStr = `${mm}/${dd}/${yyyy}`;
+    const dateStr = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}`;
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
-    const hh = String(now.getHours()).padStart(2, '0');
-    const min = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    const timeStr = `${hh}:${min}:${ss}`;
+    const lines = [
+        `${dateStr} ${timeStr}`,
+        `${latText}, ${lonText}`,
+        `Lokasi: ${selectedLokasi}`
+    ];
 
-    const timestampText = `${dateStr} ${timeStr}`;
-    const coordText = `${latText}, ${lonText}`;
-    const lokasiText = `Lokasi: ${selectedLokasi}`;
-
-    // Styling Watermark di Foto
+    // Styling Watermark Teks
     const fontSize = Math.max(28, Math.floor(canvas.width * 0.035));
     ctx.font = `bold ${fontSize}px Arial`;
     ctx.fillStyle = '#FFFFFF';
@@ -117,172 +148,139 @@ function processSnapshot(latText, lonText) {
 
     const padding = fontSize * 0.8;
     const lineSpacing = fontSize + 8;
-    
-    // Perhitungan sumbu Y agar 3 baris teks muat di bawah
-    const x = padding;
-    let currentY = canvas.height - padding - (lineSpacing * 2); 
+    let currentY = canvas.height - padding - (lineSpacing * (lines.length - 1));
 
-    // Render baris 1: Timestamp
-    ctx.strokeText(timestampText, x, currentY);
-    ctx.fillText(timestampText, x, currentY);
+    // Render baris watermark secara berurutan
+    lines.forEach(text => {
+        ctx.strokeText(text, padding, currentY);
+        ctx.fillText(text, padding, currentY);
+        currentY += lineSpacing;
+    });
 
-    // Render baris 2: Koordinat DDM
-    currentY += lineSpacing;
-    ctx.strokeText(coordText, x, currentY);
-    ctx.fillText(coordText, x, currentY);
-
-    // Render baris 3: Lokasi Cabang
-    currentY += lineSpacing;
-    ctx.strokeText(lokasiText, x, currentY);
-    ctx.fillText(lokasiText, x, currentY);
-
+    // Simpan hasil ke format JPEG Blob
     canvas.toBlob((blob) => {
-        capturedFiles[currentCategory].push(blob);
-        updatePreview(currentCategory);
-        closeCamera();
+        if (blob) {
+            state.capturedFiles[state.currentCategory].push(blob);
+            updatePreview(state.currentCategory);
+            closeCamera();
+        }
     }, 'image/jpeg', 0.9);
 }
 
+// =======================================================================
+// MANAJEMEN PREVIEW & HAPUS FOTO
+// =======================================================================
+
+/**
+ * Memperbarui UI preview foto berdasarkan kategori
+ */
 function updatePreview(category) {
-    let containerId = '';
-    if (category === 'before') {
-        containerId = 'previewContainerBefore';
-    } else if (category === 'proses') {
-        containerId = 'previewContainerProses';
-    } else {
-        containerId = 'previewContainerAfter';
-    }
-    
+    const containerId = `previewContainer${category.charAt(0).toUpperCase() + category.slice(1)}`;
     const previewContainer = document.getElementById(containerId);
-    
+
     if (!previewContainer) {
-        console.error("Preview container tidak ditemukan untuk kategori:", category);
-        return; 
+        console.error("Container preview tidak ditemukan:", containerId);
+        return;
     }
-    
+
     previewContainer.innerHTML = '';
-    
-    capturedFiles[category].forEach((blob, index) => {
+
+    state.capturedFiles[category].forEach((blob, index) => {
         const url = URL.createObjectURL(blob);
         const previewItem = document.createElement('div');
         previewItem.classList.add('preview-item');
         previewItem.innerHTML = `
-            <img src="${url}" alt="Preview">
+            <img src="${url}" alt="Preview ${category}">
             <button type="button" class="remove-btn" onclick="removeFile('${category}', ${index})">&times;</button>
         `;
         previewContainer.appendChild(previewItem);
     });
 }
 
+/**
+ * Menghapus foto tertentu dari state
+ */
 window.removeFile = function(category, index) {
-    capturedFiles[category].splice(index, 1);
+    state.capturedFiles[category].splice(index, 1);
     updatePreview(category);
-}
-
-// =======================================================================
-// FUNGSI UPLOAD & BUAT DOKUMEN KE GOOGLE DRIVE
-// =======================================================================
-
-// Fungsi bantuan untuk mengubah file (Blob) menjadi format Base64
-const blobToBase64 = (blob) => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
 };
 
-const uploadForm = document.getElementById('uploadForm');
-const successAlert = document.getElementById('successAlert');
+// =======================================================================
+// PENGIRIMAN DATA KE REST API BACKEND
+// =======================================================================
 
-if (uploadForm) {
-    uploadForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // Validasi Foto: Wajib ada Before, Proses, dan After
-        if (capturedFiles.before.length === 0 || capturedFiles.proses.length === 0 || capturedFiles.after.length === 0) {
-            alert('Laporan Ditolak: Harap lengkapi KETIGA dokumentasi foto (Before, Proses, DAN After).');
-            return;
+uploadForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const { before, proses, after } = state.capturedFiles;
+
+    // Validasi Kelengkapan Foto
+    if (before.length === 0 || proses.length === 0 || after.length === 0) {
+        alert('Laporan Ditolak: Harap lengkapi KETIGA dokumentasi foto (Before, Proses, dan After).');
+        return;
+    }
+
+    const submitBtn = uploadForm.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerText;
+    submitBtn.innerText = 'Menyusun & Mengirim Laporan... Mohon Tunggu';
+    submitBtn.disabled = true;
+
+    try {
+        // Menggunakan FormData untuk pengiriman data & berkas gambar
+        const formData = new FormData();
+        formData.append('petugas', document.getElementById('petugas').value);
+        formData.append('jabatan', document.getElementById('jabatan').value);
+        formData.append('tanggal', document.getElementById('tanggal').value);
+        formData.append('lokasi', document.getElementById('lokasi').value);
+        formData.append('keterangan', document.getElementById('keterangan').value);
+
+        // Masukkan berkas gambar Blob langsung ke FormData
+        before.forEach((blob, idx) => formData.append('before_images', blob, `before_${idx + 1}.jpg`));
+        proses.forEach((blob, idx) => formData.append('proses_images', blob, `proses_${idx + 1}.jpg`));
+        after.forEach((blob, idx) => formData.append('after_images', blob, `after_${idx + 1}.jpg`));
+
+        // Kirim permintaan HTTP POST ke Backend
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Gagal mengirim data. Status HTTP: ${response.status}`);
         }
 
-        // URL Web App Google Apps Script
-        const scriptUrl = 'https://script.google.com/macros/s/AKfycbwB1s5v1tpW-z-6-Ij34LEwkE0SxYU1ycnKuIXNaCsEpDFRMdtwzTLHt8fBtR50VCUk/exec';
-        
-        const submitBtn = uploadForm.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn.innerText;
-        submitBtn.innerText = 'Menyusun Laporan Dokumen... Mohon Tunggu';
-        submitBtn.disabled = true;
+        const result = await response.json();
+        console.log('Respon Backend:', result);
 
-        try {
-            // 1. Ambil semua teks dari input HTML
-            const dataPetugas = document.getElementById('petugas').value;
-            const dataJabatan = document.getElementById('jabatan').value;
-            const dataTanggal = document.getElementById('tanggal').value;
-            const dataLokasi = document.getElementById('lokasi').value;
-            const dataKeterangan = document.getElementById('keterangan').value;
-
-            // 2. Ubah semua gambar menjadi format Base64 Array
-            const beforeB64 = await Promise.all(capturedFiles.before.map(blob => blobToBase64(blob)));
-            const prosesB64 = await Promise.all(capturedFiles.proses.map(blob => blobToBase64(blob)));
-            const afterB64 = await Promise.all(capturedFiles.after.map(blob => blobToBase64(blob)));
-
-            // 3. Susun semua data (Teks & Gambar) menjadi 1 paket pengiriman (Payload)
-            const payload = {
-                petugas: dataPetugas,
-                jabatan: dataJabatan,
-                tanggal: dataTanggal,
-                lokasi: dataLokasi,
-                keterangan: dataKeterangan,
-                beforeImages: beforeB64,
-                prosesImages: prosesB64,
-                afterImages: afterB64
-            };
-
-            // 4. Kirim paket laporan ke Google Apps Script
-            await fetch(scriptUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    "Content-Type": "text/plain", 
-                },
-                body: JSON.stringify(payload)
-            });
-
-            // 5. Bersihkan form jika selesai
+        // Tampilkan Notifikasi Berhasil
+        if (successAlert) {
             successAlert.style.display = 'block';
-            uploadForm.reset();
-            
-            capturedFiles.before = [];
-            capturedFiles.proses = [];
-            capturedFiles.after = [];
-            document.getElementById('previewContainerBefore').innerHTML = '';
-            document.getElementById('previewContainerProses').innerHTML = '';
-            document.getElementById('previewContainerAfter').innerHTML = '';
-
             setTimeout(() => {
                 successAlert.style.display = 'none';
             }, 5000);
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        } catch (error) {
-            console.error('Error saat upload:', error);
-            alert('Terjadi kesalahan saat menyusun laporan dokumen. Silakan cek koneksi atau console browser (F12).');
-        } finally {
-            submitBtn.innerText = originalBtnText;
-            submitBtn.disabled = false;
+        } else {
+            alert('Laporan berhasil dikirim!');
         }
-    });
-}
 
-// =======================================================================
-// FUNGSI LOGOUT (DIHUBUNGKAN KE TOMBOL LOGOUT DI INDEX.HTML)
-// =======================================================================
-window.logout = function() {
-    if (confirm('Apakah Anda yakin ingin keluar dari aplikasi?')) {
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userEmail');
-        window.location.href = 'login.html';
+        // Reset Formulir dan Tampilan Preview
+        uploadForm.reset();
+        state.capturedFiles.before = [];
+        state.capturedFiles.proses = [];
+        state.capturedFiles.after = [];
+
+        ['Before', 'Proses', 'After'].forEach(cat => {
+            const container = document.getElementById(`previewContainer${cat}`);
+            if (container) container.innerHTML = '';
+        });
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    } catch (error) {
+        console.error('Error saat upload:', error);
+        alert(`Terjadi kesalahan: ${error.message}`);
+    } finally {
+        submitBtn.innerText = originalBtnText;
+        submitBtn.disabled = false;
     }
-};
+});
