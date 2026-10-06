@@ -1,148 +1,393 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <!-- Script Pengaman (Auth Guard): Cek login sebelum halaman dimuat -->
+    <!-- Script Auth Guard: Sekali Pakai (Refresh = Wajib Login Ulang) -->
     <script>
-        if (localStorage.getItem('isLoggedIn') !== 'true') {
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
             window.location.href = 'login.html';
+        } else {
+            // Langsung hapus status login setelah lolos verifikasi awal
+            // Efeknya: Saat F5 / Refresh, halaman otomatis minta login ulang
+            sessionStorage.removeItem('isLoggedIn');
         }
     </script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Pekerjaan Bongkaran - Klinik Bunga Melati</title>
+    <title>Dashboard Bongkaran KBM</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Bongkaran KBM</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; min-height: 100vh; background-color: #f4f6f9; }
+
+        /* Sidebar Kiri */
+        .sidebar {
+            width: 250px;
+            background-color: #1b5e20;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 15px;
+            flex-shrink: 0;
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        .sidebar-brand img { height: 38px; }
+        .sidebar-brand h2 { font-size: 1.1rem; color: #fff; }
+
+        .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            color: #d1e7dd;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+        .nav-item.active a, .nav-item a:hover {
+            background-color: #ffffff;
+            color: #1b5e20;
+        }
+
+        /* Container Main Wrapper */
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; }
+        .top-header {
+            background: #fff;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .top-header h1 { font-size: 1.3rem; color: #333; }
+        .date-badge {
+            background-color: #1b5e20;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .content-body { padding: 25px 30px; }
+
+        /* Stat Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stat-info p { font-size: 0.85rem; color: #6c757d; font-weight: 600; }
+        .stat-info h3 { font-size: 1.8rem; color: #212529; margin-top: 5px; }
+        .stat-icon { font-size: 2.2rem; }
+
+        /* Navigation Sections */
+        .dashboard-section { display: none; }
+        .dashboard-section.active { display: block; }
+
+        .card-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 22px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            margin-bottom: 25px;
+        }
+        .branch-title {
+            color: #1b5e20;
+            border-bottom: 2px solid #1b5e20;
+            padding-bottom: 6px;
+            margin-bottom: 12px;
+            font-size: 1.05rem;
+        }
+    </style>
 </head>
 <body>
 
-    <header style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
-        <div class="logo-container">
-            <img src="KBM.png" alt="Logo Klinik Bunga Melati">
-            <h1>Klinik Bunga Melati</h1>
+<!-- SIDEBAR NAVIGATION -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="assets/img/KBM.png" alt="Logo KBM">
+            <h2>Bongkaran KBM</h2>
         </div>
-        <!-- Tombol Logout -->
-        <button type="button" onclick="logout()" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9rem;">
-            🚪 Keluar / Logout
-        </button>
-    </header>
+        <ul class="nav-menu" style="height: calc(100% - 70px); display: flex; flex-direction: column;">
+            <li class="nav-item active" id="navDashboard">
+                <a href="javascript:void(0)" onclick="switchTab('dashboard')">📈 Dashboard</a>
+            </li>
+            <li class="nav-item" id="navForm">
+                <a href="javascript:void(0)" onclick="switchTab('form')">📋 Form Input Laporan</a>
+            </li>
+            <li class="nav-item" id="navRiwayat">
+                <a href="javascript:void(0)" onclick="switchTab('riwayat')">📂 Riwayat Dokumen</a>
+            </li>
+            
+            <!-- Tombol Logout Merah -->
+            <li class="nav-item" style="margin-top: auto; padding-top: 15px;">
+                <a href="javascript:void(0)" onclick="logout()" style="background-color: #dc3545; color: white; justify-content: center; text-align: center;">🚪 Keluar / Logout</a>
+            </li>
+        </ul>
+    </aside>
 
-    <div class="container">
-        <div class="card">
-            <h2 class="card-title">Laporan Pekerjaan Bongkaran</h2>
-            <p class="card-subtitle">Gunakan kamera langsung untuk mengambil dokumentasi Before, Proses, & After dengan timemark koordinat GPS.</p>
-
-            <div id="successAlert" class="alert alert-success">
-                Laporan pekerjaan bongkaran berhasil dikirim!
+    <!-- KONTEN UTAMA -->
+    <div class="main-wrapper">
+        <header class="top-header">
+            <div>
+                <h1>Dashboard Pekerjaan Bongkaran</h1>
+                <p style="font-size: 0.85rem; color: #6c757d;">Selamat Datang, <strong>Administrator</strong></p>
             </div>
+            <div class="date-badge" id="currentDateBadge">06 Oct 2026</div>
+        </header>
 
-            <form id="uploadForm">
-                <div class="form-group">
-                    <label for="petugas">Nama Petugas / Pelapor</label>
-                    <input type="text" id="petugas" name="petugas" required placeholder="Masukkan nama lengkap...">
-                </div>
+        <div class="content-body">
 
-                <!-- Kolom Jabatan Baru -->
-                <div class="form-group">
-                    <label for="jabatan">Jabatan</label>
-                    <select id="jabatan" name="jabatan" required>
-                        <option value="" disabled selected>Pilih Jabatan...</option>
-                        <option value="Pendaftaran">Pendaftaran</option>
-                        <option value="Sarpras">Sarpras</option>
-                        <option value="Rekam Medis">Rekam Medis</option>
-                        <option value="Perawat">Perawat</option>
-                        <option value="Analis Lab">Analis Lab</option>
-                        <option value="PIC">PIC</option>
-                        <option value="Bidan">Bidan</option>
-                        <option value="Dokter Umum">Dokter Umum</option>
-                        <option value="Dokter Gigi">Dokter Gigi</option>
-                        <option value="HRD">HRD</option>
-                        <option value="Supervisor">Supervisor</option>
-                        <option value="Farmasi">Farmasi</option>
-                        <option value="Apoteker">Apoteker</option>
-                        <option value="Keuangan">Keuangan</option>
-                        <option value="Admin Claim">Admin Claim</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Engineering">Engineering</option>
-                        <option value="Pemeliharaan">Pemeliharaan</option>
-                        <option value="House Keeping">House Keeping</option>
-                        <option value="Security">Security</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="tanggal">Tanggal Pelaksanaan</label>
-                    <input type="date" id="tanggal" name="tanggal" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="lokasi">Cabang Klinik (Lokasi Bongkaran)</label>
-                    <select id="lokasi" name="lokasi" required>
-                        <option value="" disabled selected>Pilih Lokasi...</option>
-                        <option value="KBM Jaksa Agung">KBM Jaksa Agung</option>
-                        <option value="KBM Panjaitan">KBM Panjaitan</option>
-                        <option value="KBM Pajajaran">KBM Pajajaran</option>
-                        <option value="KBM Pasuruan">KBM Pasuruan</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="keterangan">Keterangan Pekerjaan </label>
-                    <textarea id="keterangan" name="keterangan" required placeholder="Deskripsikan detail progres atau hasil bongkaran..."></textarea>
-                </div>
-
-                <!-- Dokumentasi Foto Kamera Langsung (Before, Proses, & After) -->
-                <div class="form-group">
-                    <label>Dokumentasi Kamera </label>
-                    
-                    <!-- Foto Sebelum (Before) -->
-                    <div class="photo-section">
-                        <label class="photo-label">Foto Sebelum (Before)</label>
-                        <button type="button" class="btn-camera" onclick="openCamera('before')">📷 Ambil Foto Before</button>
-                        <div class="preview-container" id="previewContainerBefore"></div>
+            <!-- TAB 1: DASHBOARD RINGKASAN & GRAFIK -->
+            <section id="sectionDashboard" class="dashboard-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-info"><p>Laporan Hari Ini</p><h3 id="statHariIni">0</h3></div>
+                        <div class="stat-icon">👥</div>
                     </div>
-
-                    <!-- Foto Proses (Progress) -->
-                    <div class="photo-section" style="margin-top: 15px;">
-                        <label class="photo-label">Foto Proses (Progress)</label>
-                        <button type="button" class="btn-camera" onclick="openCamera('proses')">📷 Ambil Foto Proses</button>
-                        <div class="preview-container" id="previewContainerProses"></div>
+                    <div class="stat-card">
+                        <div class="stat-info"><p>Laporan Bulan Ini</p><h3 id="statBulanIni">0</h3></div>
+                        <div class="stat-icon">📅</div>
                     </div>
-
-                    <!-- Foto Sesudah (After) -->
-                    <div class="photo-section" style="margin-top: 15px;">
-                        <label class="photo-label">Foto Sesudah (After)</label>
-                        <button type="button" class="btn-camera" onclick="openCamera('after')">📷 Ambil Foto After</button>
-                        <div class="preview-container" id="previewContainerAfter"></div>
+                    <div class="stat-card">
+                        <div class="stat-info"><p>Cabang Aktif</p><h3 id="statTotalCabang">4</h3></div>
+                        <div class="stat-icon">🏥</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-info"><p>Total Dokumen (.docx)</p><h3 id="statTotalDokumen">0</h3></div>
+                        <div class="stat-icon">📄</div>
                     </div>
                 </div>
 
-                <button type="submit" class="btn-submit">Kirim Laporan</button>
-            </form>
+                <div class="card-box">
+                    <h3 style="font-size: 1.1rem; color: #333; margin-bottom: 15px;">📈 Grafik Laporan Pekerjaan 7 Hari Terakhir</h3>
+                    <canvas id="laporanChart" style="max-height: 320px;"></canvas>
+                </div>
+            </section>
+
+            <!-- TAB 2: FORM INPUT LAPORAN -->
+            <section id="sectionForm" class="dashboard-section">
+                <div class="card-box">
+                    <h2 style="margin-bottom: 5px; color: #1b5e20;">Form Laporan Pekerjaan Bongkaran</h2>
+                    <p style="color: #6c757d; margin-bottom: 20px; font-size: 0.9rem;">Gunakan kamera langsung untuk mengambil dokumentasi Before, Proses, & After berserta watermark GPS.</p>
+
+                    <div id="successAlert" class="alert alert-success" style="display:none; background:#d4edda; color:#155724; padding:12px; border-radius:6px; margin-bottom:15px;">
+                        Laporan pekerjaan bongkaran berhasil dikirim dan tersimpan di database!
+                    </div>
+
+                    <form id="uploadForm">
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="display:block; font-weight:bold; margin-bottom:5px;">Nama Petugas / Pelapor</label>
+                            <input type="text" id="petugas" name="petugas" required placeholder="Masukkan nama lengkap..." style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="display:block; font-weight:bold; margin-bottom:5px;">Jabatan</label>
+                            <select id="jabatan" name="jabatan" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                                <option value="" disabled selected>Pilih Jabatan...</option>
+                                <option value="Pendaftaran">Pendaftaran</option>
+                                <option value="Sarpras">Sarpras</option>
+                                <option value="Rekam Medis">Rekam Medis</option>
+                                <option value="Perawat">Perawat</option>
+                                <option value="Analis Lab">Analis Lab</option>
+                                <option value="PIC">PIC</option>
+                                <option value="Bidan">Bidan</option>
+                                <option value="Dokter Umum">Dokter Umum</option>
+                                <option value="Dokter Gigi">Dokter Gigi</option>
+                                <option value="HRD">HRD</option>
+                                <option value="Supervisor">Supervisor</option>
+                                <option value="Farmasi">Farmasi</option>
+                                <option value="Apoteker">Apoteker</option>
+                                <option value="Keuangan">Keuangan</option>
+                                <option value="Admin Claim">Admin Claim</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Engineering">Engineering</option>
+                                <option value="Pemeliharaan">Pemeliharaan</option>
+                                <option value="House Keeping">House Keeping</option>
+                                <option value="Security">Security</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="display:block; font-weight:bold; margin-bottom:5px;">Tanggal Pelaksanaan</label>
+                            <input type="date" id="tanggal" name="tanggal" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="display:block; font-weight:bold; margin-bottom:5px;">Cabang Klinik (Lokasi Bongkaran)</label>
+                            <select id="lokasi" name="lokasi" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                                <option value="" disabled selected>Pilih Lokasi...</option>
+                                <option value="KBM Jaksa Agung">KBM Jaksa Agung</option>
+                                <option value="KBM Panjaitan">KBM Panjaitan</option>
+                                <option value="KBM Pajajaran">KBM Pajajaran</option>
+                                <option value="KBM Pasuruan">KBM Pasuruan</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="display:block; font-weight:bold; margin-bottom:5px;">Keterangan Pekerjaan</label>
+                            <textarea id="keterangan" name="keterangan" required placeholder="Deskripsikan detail progres atau hasil bongkaran..." style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; min-height:80px;"></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:20px;">
+                            <label style="display:block; font-weight:bold; margin-bottom:10px;">Dokumentasi Kamera</label>
+
+                            <div style="margin-bottom: 12px;">
+                                <p style="font-size:0.9rem; font-weight:bold;">Foto Sebelum (Before)</p>
+                                <button type="button" onclick="openCamera('before')" style="background:#28a745; color:white; border:none; padding:8px 14px; border-radius:4px; cursor:pointer; margin-top:4px;">📷 Ambil Foto Before</button>
+                                <div id="previewContainerBefore" class="preview-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;"></div>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <p style="font-size:0.9rem; font-weight:bold;">Foto Proses (Progress)</p>
+                                <button type="button" onclick="openCamera('proses')" style="background:#28a745; color:white; border:none; padding:8px 14px; border-radius:4px; cursor:pointer; margin-top:4px;">📷 Ambil Foto Proses</button>
+                                <div id="previewContainerProses" class="preview-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;"></div>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <p style="font-size:0.9rem; font-weight:bold;">Foto Sesudah (After)</p>
+                                <button type="button" onclick="openCamera('after')" style="background:#28a745; color:white; border:none; padding:8px 14px; border-radius:4px; cursor:pointer; margin-top:4px;">📷 Ambil Foto After</button>
+                                <div id="previewContainerAfter" class="preview-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;"></div>
+                            </div>
+                        </div>
+
+                        <button type="submit" style="background:#1b5e20; color:white; border:none; padding:12px 20px; font-size:1rem; font-weight:bold; border-radius:6px; cursor:pointer; width:100%;">Kirim Laporan</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 3: RIWAYAT DOKUMEN PER CABANG -->
+            <section id="sectionRiwayat" class="dashboard-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color: #333;">Riwayat Upload Dokumen Per Cabang</h2>
+                    <button type="button" onclick="loadRiwayat()" style="background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                        🔄 Refresh Tabel
+                    </button>
+                </div>
+
+                <div class="card-box">
+                    <h3 class="branch-title">🏥 KBM Jaksa Agung</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                            <thead>
+                                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                    <th style="padding: 10px; width: 40px;">No</th>
+                                    <th style="padding: 10px;">Petugas</th>
+                                    <th style="padding: 10px;">Nama Dokumen (.docx)</th>
+                                    <th style="padding: 10px;">Waktu Upload</th>
+                                    <th style="padding: 10px; text-align: center; width: 110px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody_JaksaAgung">
+                                <tr><td colspan="5" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-box">
+                    <h3 class="branch-title">🏥 KBM Panjaitan</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                            <thead>
+                                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                    <th style="padding: 10px; width: 40px;">No</th>
+                                    <th style="padding: 10px;">Petugas</th>
+                                    <th style="padding: 10px;">Nama Dokumen (.docx)</th>
+                                    <th style="padding: 10px;">Waktu Upload</th>
+                                    <th style="padding: 10px; text-align: center; width: 110px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody_Panjaitan">
+                                <tr><td colspan="5" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-box">
+                    <h3 class="branch-title">🏥 KBM Pajajaran</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                            <thead>
+                                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                    <th style="padding: 10px; width: 40px;">No</th>
+                                    <th style="padding: 10px;">Petugas</th>
+                                    <th style="padding: 10px;">Nama Dokumen (.docx)</th>
+                                    <th style="padding: 10px;">Waktu Upload</th>
+                                    <th style="padding: 10px; text-align: center; width: 110px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody_Pajajaran">
+                                <tr><td colspan="5" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-box">
+                    <h3 class="branch-title">🏥 KBM Pasuruan</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                            <thead>
+                                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                    <th style="padding: 10px; width: 40px;">No</th>
+                                    <th style="padding: 10px;">Petugas</th>
+                                    <th style="padding: 10px;">Nama Dokumen (.docx)</th>
+                                    <th style="padding: 10px;">Waktu Upload</th>
+                                    <th style="padding: 10px; text-align: center; width: 110px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody_Pasuruan">
+                                <tr><td colspan="5" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
         </div>
     </div>
 
-    <!-- Modal Kamera -->
-    <div id="cameraModal" class="modal">
-        <div class="modal-content">
+    <!-- MODAL KAMERA -->
+    <div id="cameraModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:9999;">
+        <div style="background:#fff; padding:20px; border-radius:12px; width:90%; max-width:500px; text-align:center;">
             <h3>Ambil Dokumentasi Foto</h3>
-            <div class="video-container">
-                <video id="cameraStream" autoplay playsinline></video>
-            </div>
-            <div class="modal-buttons">
-                <button type="button" class="btn-capture" id="captureBtn">Potret</button>
-                <button type="button" class="btn-close" onclick="closeCamera()">Batal</button>
+            <video id="cameraStream" autoplay playsinline style="width:100%; border-radius:8px; margin:15px 0; background:#000;"></video>
+            <div>
+                <button type="button" id="captureBtn" style="background:#28a745; color:white; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer;">Potret</button>
+                <button type="button" onclick="closeCamera()" style="background:#dc3545; color:white; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; margin-left:10px;">Batal</button>
             </div>
         </div>
     </div>
 
-    <footer>
-        &copy; Rizki Gautama 2026 Klinik Bunga Melati. Seluruh hak cipta dilindungi.
-    </footer>
-
-    <!-- Script Utama Aplikasi -->
     <script src="script.js"></script>
 
-    <!-- Script Fungsi Logout -->
     <script>
         function logout() {
             if (confirm('Apakah Anda yakin ingin keluar?')) {

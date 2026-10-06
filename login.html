@@ -3,27 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Halaman Login - Bongkaran</title>
+    <title>Halaman Login - Bongkaran KBM</title>
     <!-- Memuat Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Memuat FontAwesome untuk Ikon (User & Gembok) -->
+    <!-- Memuat FontAwesome untuk Ikon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         body {
-            background-color: #eef2f5; /* Warna latar belakang abu-abu terang */
+            background-color: #eef2f5;
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 0;
+            font-family: Arial, sans-serif;
         }
         .login-card {
             width: 100%;
             max-width: 400px;
             border: none;
-            border-radius: 4px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            border-top: 4px solid #28a745; /* Garis hijau di atas sesuai gambar */
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-top: 4px solid #28a745;
         }
         .login-header {
             text-align: center;
@@ -32,10 +34,9 @@
             margin-bottom: 20px;
         }
         .login-header img {
-            max-width: 150px;
+            max-width: 120px;
             margin-bottom: 10px;
         }
-        /* Ikon berada di sebelah kiri input, background diganti warna putih agar menyatu dengan input */
         .input-group-text {
             background-color: #fff;
             border-right: 0;
@@ -45,16 +46,16 @@
             border-left: 0;
             background-color: #fff;
         }
-        /* Memberikan efek fokus saat input diklik */
         .input-group:focus-within .input-group-text,
         .input-group:focus-within .form-control {
-             border-color: #86b7fe;
-             box-shadow: none;
+            border-color: #86b7fe;
+            box-shadow: none;
         }
         .btn-masuk {
             background-color: #28a745;
             border-color: #28a745;
             font-weight: bold;
+            padding: 10px;
         }
         .btn-masuk:hover {
             background-color: #218838;
@@ -72,18 +73,16 @@
 <body>
 
     <div class="card login-card p-4">
-        <!-- Bagian Header & Logo -->
+        <!-- Header & Logo -->
         <div class="login-header">
-            <!-- Ganti src ini dengan path logo aplikasi Bongkaran Anda -->
-            <img src="https://via.placeholder.com/150x50?text=LOGO+BONGKARAN" alt="Logo Bongkaran">
-            <h6 class="fw-bold mt-2 mb-0">BONGKARAN KBM GROUP</h6>
+            <img src="assets/img/KBM.png" alt="Logo Bongkaran KBM">
+            <h6 class="fw-bold mt-2 mb-0" style="color: #1b5e20;">BONGKARAN KBM GROUP</h6>
         </div>
 
         <h6 class="text-center mb-4 fw-bold">Halaman Login</h6>
 
-        <!-- Form Login (Action dihilangkan karena menggunakan JavaScript) -->
+        <!-- Form Login -->
         <form id="loginForm">
-            
             <!-- Input Email -->
             <div class="input-group mb-3">
                 <span class="input-group-text"><i class="fas fa-user"></i></span>
@@ -104,10 +103,10 @@
                         Tampilkan kata sandi
                     </label>
                 </div>
-                <a href="#" class="text-decoration-none">Lupa Kata Sandi?</a>
+                <a href="javascript:void(0)" onclick="alert('Silakan hubungi tim IT Administrator KBM untuk reset kata sandi.')" class="text-decoration-none">Lupa Kata Sandi?</a>
             </div>
 
-            <!-- Pesan Error (Tersembunyi secara default) -->
+            <!-- Pesan Error -->
             <div id="errorMessage" class="alert alert-danger d-none p-2 mb-3 text-center" style="font-size: 0.9rem;" role="alert">
                 Email atau Password salah!
             </div>
@@ -123,46 +122,44 @@
         </div>
     </div>
 
-    <!-- Script Logika -->
+    <!-- Script Logika Login Multi-Akun -->
     <script>
-        // 1. Fitur 'Tampilkan kata sandi'
+        // Fitur Tampilkan kata sandi
         document.getElementById('showPassword').addEventListener('change', function() {
             const passwordInput = document.getElementById('password');
-            if (this.checked) {
-                passwordInput.type = 'text';
-            } else {
-                passwordInput.type = 'password';
-            }
+            passwordInput.type = this.checked ? 'text' : 'password';
         });
 
-        // 2. Logika Verifikasi Login
-        document.getElementById('loginForm').addEventListener('submit', function (e) {
-            e.preventDefault(); // Mencegah form melakukan reload halaman
+        // Daftar Akun Pengguna
+        const daftarAkun = [
+            { email: "admin@bongkaran.com", pass: "admin123", nama: "Rizki Gautama, S.Kom OCNA" },
+            { email: "jaksaagung@kbm.com", pass: "kbm123", nama: "Admin KBM Jaksa Agung" },
+            { email: "panjaitan@kbm.com", pass: "kbm123", nama: "Admin KBM Panjaitan" },
+            { email: "pajajaran@kbm.com", pass: "kbm123", nama: "Admin KBM Pajajaran" },
+            { email: "pasuruan@kbm.com", pass: "kbm123", nama: "Admin KBM Pasuruan" }
+        ];
 
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+        // Verifikasi Login
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const inputEmail = document.getElementById('email').value.trim().toLowerCase();
+            const inputPass = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
 
-            // --- KREDENSIAL LOGIN SEMENTARA ---
-            // Ganti email dan password ini sesuai keinginan Anda
-            const emailBenar = "admin@bongkaran.com";
-            const passwordBenar = "admin123";
+            // Cari akun yang cocok
+            const akunDitemukan = daftarAkun.find(user => user.email.toLowerCase() === inputEmail && user.pass === inputPass);
 
-            if (email === emailBenar && password === passwordBenar) {
-                // Sembunyikan pesan error jika sebelumnya muncul
+            if (akunDitemukan) {
                 errorMessage.classList.add('d-none');
                 
-                // Simpan status login di Local Storage
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('userEmail', email);
+                // Simpan status & nama akun ke sessionStorage
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('userName', akunDitemukan.nama);
+                sessionStorage.setItem('userEmail', akunDitemukan.email);
 
-                // Tampilkan notifikasi (opsional, bisa dihapus)
-                alert('Login berhasil! Mengarahkan ke aplikasi...');
-                
-                // Alihkan (Redirect) ke halaman utama aplikasi (index.html)
                 window.location.href = 'index.html'; 
             } else {
-                // Tampilkan pesan error jika salah
                 errorMessage.classList.remove('d-none');
             }
         });
