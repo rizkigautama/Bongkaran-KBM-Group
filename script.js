@@ -1,3 +1,6 @@
+// =======================================================================
+// KONFIGURASI BACKEND & STATE APLIKASI
+// =======================================================================
 const BASE_URL = 'http://127.0.0.1:8000';
 const API_URL = `${BASE_URL}/api/laporan`;
 const RIWAYAT_URL = `${BASE_URL}/api/riwayat`;
@@ -11,6 +14,9 @@ const state = {
 
 let chartInstance = null;
 
+// =======================================================================
+// NAVIGASI TAB DASHBOARD
+// =======================================================================
 function switchTab(tabName) {
     document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -29,6 +35,9 @@ function switchTab(tabName) {
     }
 }
 
+// =======================================================================
+// MEMUAT STATISTIK DASHBOARD & CHART.JS
+// =======================================================================
 async function loadDashboardStats() {
     try {
         const res = await fetch(STATS_URL);
@@ -69,7 +78,13 @@ async function loadDashboardStats() {
     }
 }
 
+// =======================================================================
+// MEMUAT TABEL RIWAYAT DENGAN FILTER HAK AKSES PER CABANG
+// =======================================================================
 async function loadRiwayat() {
+    const userRole = sessionStorage.getItem('userRole') || 'admin';
+    const userCabang = sessionStorage.getItem('userCabang') || 'all';
+
     const branches = [
         { id: 'tableBody_JaksaAgung', name: 'KBM Jaksa Agung' },
         { id: 'tableBody_Panjaitan', name: 'KBM Panjaitan' },
@@ -86,6 +101,17 @@ async function loadRiwayat() {
         branches.forEach(branch => {
             const tableBody = document.getElementById(branch.id);
             if (!tableBody) return;
+
+            const cardBox = tableBody.closest('.card-box');
+
+            // PEMBATASAN HAK AKSES:
+            // Jika akun cabang, sembunyikan tabel milik cabang lain sepenuhnya
+            if (userRole === 'cabang' && userCabang !== 'all' && branch.name !== userCabang) {
+                if (cardBox) cardBox.style.display = 'none';
+                return;
+            } else {
+                if (cardBox) cardBox.style.display = 'block';
+            }
 
             const filteredData = data.filter(item => item.lokasi === branch.name);
             tableBody.innerHTML = '';
@@ -117,6 +143,9 @@ async function loadRiwayat() {
     }
 }
 
+// =======================================================================
+// MANAJEMEN KAMERA & GEOLOKASI WATERMARK
+// =======================================================================
 async function openCamera(category) {
     const lokasiDropdown = document.getElementById('lokasi');
     if (!lokasiDropdown || !lokasiDropdown.value) {
@@ -143,7 +172,6 @@ function closeCamera() {
     document.getElementById('cameraModal').style.display = 'none';
 }
 
-
 function convertToDDM(decimal, isLatitude) {
     const abs = Math.abs(decimal);
     const deg = Math.floor(abs);
@@ -159,14 +187,6 @@ document.getElementById('captureBtn').addEventListener('click', () => {
         () => processSnapshot("07° 00.000' S", "112° 00.000' E")
     );
 });
-
-function logout() {
-    if (confirm('Apakah Anda yakin ingin keluar?')) {
-        sessionStorage.clear();
-        localStorage.clear();
-        window.location.href = 'login.html';
-    }
-}
 
 function processSnapshot(latText, lonText) {
     const video = document.getElementById('cameraStream');
@@ -226,6 +246,9 @@ window.removeFile = function(category, index) {
     updatePreview(category);
 };
 
+// =======================================================================
+// PENGIRIMAN FORM LAPORAN
+// =======================================================================
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const { before, proses, after } = state.capturedFiles;
@@ -253,6 +276,14 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         setTimeout(() => document.getElementById('successAlert').style.display = 'none', 5000);
 
         document.getElementById('uploadForm').reset();
+        
+        // Kembalikan kunci dropdown lokasi jika akun cabang
+        const userRole = sessionStorage.getItem('userRole');
+        const userCabang = sessionStorage.getItem('userCabang');
+        if (userRole === 'cabang' && userCabang !== 'all') {
+            document.getElementById('lokasi').value = userCabang;
+        }
+
         state.capturedFiles = { before: [], proses: [], after: [] };
         ['Before', 'Proses', 'After'].forEach(c => document.getElementById(`previewContainer${c}`).innerHTML = '');
         
@@ -262,8 +293,46 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     }
 });
 
+// =======================================================================
+// FUNGSI LOGOUT
+// =======================================================================
+function logout() {
+    if (confirm('Apakah Anda yakin ingin keluar?')) {
+        sessionStorage.clear();
+        localStorage.clear();
+        window.location.href = 'login.html';
+    }
+}
+
+// =======================================================================
+// INISIALISASI SAAT HALAMAN SELESAI DIMUAT
+// =======================================================================
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Tampilkan Nama User
+    const activeUserName = sessionStorage.getItem('userName') || 'Rizki Gautama, S.Kom OCNA';
+    const userNameElement = document.getElementById('userNameDisplay');
+    if (userNameElement) {
+        userNameElement.innerText = activeUserName;
+    }
+
+    // 2. Kunci Dropdown Lokasi jika Akun Cabang
+    const userRole = sessionStorage.getItem('userRole') || 'admin';
+    const userCabang = sessionStorage.getItem('userCabang') || 'all';
+    const lokasiDropdown = document.getElementById('lokasi');
+
+    if (lokasiDropdown && userRole === 'cabang' && userCabang !== 'all') {
+        lokasiDropdown.value = userCabang;
+        lokasiDropdown.style.pointerEvents = 'none';
+        lokasiDropdown.style.backgroundColor = '#e9ecef';
+    }
+
+    // 3. Format Tanggal Header
     const options = { day: '2-digit', month: 'short', year: 'numeric' };
-    document.getElementById('currentDateBadge').innerText = new Date().toLocaleDateString('id-ID', options);
+    const dateBadge = document.getElementById('currentDateBadge');
+    if (dateBadge) {
+        dateBadge.innerText = new Date().toLocaleDateString('id-ID', options);
+    }
+
+    // 4. Load Statistik Dashboard
     loadDashboardStats();
 });

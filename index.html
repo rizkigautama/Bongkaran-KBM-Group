@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <!-- Script Auth Guard: Sekali Pakai (Refresh = Wajib Login Ulang) -->
+    <!-- Script Auth Guard: Sekali Pakai (Refresh F5 = Wajib Login Ulang) -->
     <script>
         if (sessionStorage.getItem('isLoggedIn') !== 'true') {
             window.location.href = 'login.html';
         } else {
-            // Langsung hapus status login setelah lolos verifikasi awal
-            // Efeknya: Saat F5 / Refresh, halaman otomatis minta login ulang
+            // Hapus sesi setelah verifikasi awal agar refresh memaksa login ulang
             sessionStorage.removeItem('isLoggedIn');
         }
     </script>
@@ -15,10 +14,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Bongkaran KBM</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Bongkaran KBM</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -45,7 +42,7 @@
         .sidebar-brand img { height: 38px; }
         .sidebar-brand h2 { font-size: 1.1rem; color: #fff; }
 
-        .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 8px; flex: 1; }
         .nav-item a {
             display: flex;
             align-items: center;
@@ -105,7 +102,7 @@
         .stat-info h3 { font-size: 1.8rem; color: #212529; margin-top: 5px; }
         .stat-icon { font-size: 2.2rem; }
 
-        /* Navigation Sections */
+        /* Tab Sections */
         .dashboard-section { display: none; }
         .dashboard-section.active { display: block; }
 
@@ -127,13 +124,13 @@
 </head>
 <body>
 
-<!-- SIDEBAR NAVIGATION -->
+    <!-- SIDEBAR NAVIGATION -->
     <aside class="sidebar">
         <div class="sidebar-brand">
             <img src="assets/img/KBM.png" alt="Logo KBM">
             <h2>Bongkaran KBM</h2>
         </div>
-        <ul class="nav-menu" style="height: calc(100% - 70px); display: flex; flex-direction: column;">
+        <ul class="nav-menu">
             <li class="nav-item active" id="navDashboard">
                 <a href="javascript:void(0)" onclick="switchTab('dashboard')">📈 Dashboard</a>
             </li>
@@ -144,9 +141,11 @@
                 <a href="javascript:void(0)" onclick="switchTab('riwayat')">📂 Riwayat Dokumen</a>
             </li>
             
-            <!-- Tombol Logout Merah -->
-            <li class="nav-item" style="margin-top: auto; padding-top: 15px;">
-                <a href="javascript:void(0)" onclick="logout()" style="background-color: #dc3545; color: white; justify-content: center; text-align: center;">🚪 Keluar / Logout</a>
+            <!-- TOMBOL LOGOUT MERAH -->
+            <li class="nav-item" style="margin-top: auto; padding-top: 20px;">
+                <a href="javascript:void(0)" onclick="logout()" style="background-color: #dc3545; color: white; justify-content: center; text-align: center; border-radius: 8px; font-weight: bold;">
+                    🚪 Keluar / Logout
+                </a>
             </li>
         </ul>
     </aside>
@@ -156,9 +155,11 @@
         <header class="top-header">
             <div>
                 <h1>Dashboard Pekerjaan Bongkaran</h1>
-                <p style="font-size: 0.85rem; color: #6c757d;">Selamat Datang, <strong>Administrator</strong></p>
+                <p style="font-size: 0.9rem; color: #6c757d;">
+                    Selamat Datang, <strong id="userNameDisplay" style="color: #1b5e20;">Rizki Gautama, S.Kom OCNA</strong>
+                </p>
             </div>
-            <div class="date-badge" id="currentDateBadge">06 Oct 2026</div>
+            <div class="date-badge" id="currentDateBadge">06 Okt 2026</div>
         </header>
 
         <div class="content-body">
@@ -391,8 +392,8 @@
     <script>
         function logout() {
             if (confirm('Apakah Anda yakin ingin keluar?')) {
-                localStorage.removeItem('isLoggedIn');
-                localStorage.removeItem('userEmail');
+                sessionStorage.clear();
+                localStorage.clear();
                 window.location.href = 'login.html';
             }
         }
