@@ -40,9 +40,19 @@ def init_db():
             keterangan TEXT,
             filename TEXT,
             download_url TEXT,
-            created_at TEXT
+            created_at TEXT,
+            status TEXT DEFAULT 'Menunggu'
         )
     """)
+
+  # Migrasi otomatis jika kolom status belum ada
+  cursor.execute("PRAGMA table_info(laporan)")
+  columns = [col[1] for col in cursor.fetchall()]
+  if "status" not in columns:
+    cursor.execute(
+        "ALTER TABLE laporan ADD COLUMN status TEXT DEFAULT 'Menunggu'"
+    )
+
   conn.commit()
   conn.close()
 
@@ -98,7 +108,7 @@ def get_riwayat():
   cursor = conn.cursor()
   cursor.execute(
       "SELECT id, petugas, jabatan, tanggal, lokasi, filename, download_url,"
-      " created_at FROM laporan ORDER BY id DESC"
+      " created_at, status FROM laporan ORDER BY id DESC"
   )
   rows = cursor.fetchall()
   conn.close()
@@ -113,9 +123,42 @@ def get_riwayat():
           "filename": r[5],
           "download_url": r[6],
           "created_at": r[7],
+          "status": r[8] if len(r) > 8 and r[8] else "Menunggu",
       }
       for r in rows
   ]
+
+
+# --- ENDPOINT VERIFIKASI PEKERJAAN (ADMIN ONLY) ---
+@app.put("/api/laporan/{laporan_id}/verifikasi")
+def verifikasi_laporan(laporan_id: int):
+  conn = sqlite3.connect(DB_NAME)
+  cursor = conn.cursor()
+  cursor.execute(
+      "UPDATE laporan SET status = 'Terverifikasi' WHERE id = ?", (laporan_id,)
+  )
+  conn.commit()
+  conn.close()
+  return {"status": "sukses", "message": "Laporan berhasil diverifikasi!"}
+
+
+# --- ENDPOINT HAPUS LAPORAN & BERKAS (ADMIN ONLY) ---
+@app.delete("/api/laporan/{laporan_id}")
+def hapus_laporan(laporan_id: int):
+  conn = sqlite3.connect(DB_NAME)
+  cursor = conn.cursor()
+  cursor.execute("SELECT filename FROM laporan WHERE id = ?", (laporan_id,))
+  row = cursor.fetchone()
+  if row:
+    path_file = os.path.join(DOCS_DIR, row[0])
+    if os.path.exists(path_file):
+      os.remove(path_file)
+    cursor.execute("DELETE FROM laporan WHERE id = ?", (laporan_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "sukses", "message": "Laporan berhasil dihapus!"}
+  conn.close()
+  return {"status": "error", "message": "Dokumen tidak ditemukan"}
 
 
 @app.post("/api/laporan")
@@ -176,8 +219,8 @@ async def terima_laporan(
   cursor = conn.cursor()
   cursor.execute(
       """
-        INSERT INTO laporan (petugas, jabatan, tanggal, lokasi, keterangan, filename, download_url, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO laporan (petugas, jabatan, tanggal, lokasi, keterangan, filename, download_url, created_at, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Menunggu')
     """,
       (
           petugas,

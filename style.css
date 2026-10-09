@@ -281,6 +281,22 @@ video {
     border: 1px solid #C3E6CB;
 }
 
+.sidebar {
+    width: 250px;
+    background-color: #1b5e20;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 15px;
+    flex-shrink: 0;
+    transition: margin-left 0.3s ease; /* Animasi geser smooth */
+}
+
+/* Kelas untuk menyembunyikan sidebar ke arah luar layar */
+.sidebar.collapsed {
+    margin-left: -250px;
+}
+
 footer {
     text-align: center;
     padding: 1.5rem;

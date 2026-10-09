@@ -130,13 +130,43 @@
             passwordInput.type = this.checked ? 'text' : 'password';
         });
 
-        // Daftar Akun Pengguna
+        // Daftar Akun Pengguna Resmi KBM
         const daftarAkun = [
-            { email: "admin@bongkaran.com", pass: "admin123", nama: "Rizki Gautama, S.Kom OCNA" },
-            { email: "jaksaagung@klinikbungamelati.com", pass: "kbm123", nama: "Admin KBM Jaksa Agung" },
-            { email: "kbmpanjaitan@klinikbungamelati.com", pass: "kbm123", nama: "Admin KBM Panjaitan" },
-            { email: "pajajaran@klinikbungamelati.com", pass: "kbm123", nama: "Admin KBM Pajajaran" },
-            { email: "pasuruan@klinikbungamelati.com", pass: "kbm123", nama: "Admin KBM Pasuruan" }
+            { 
+                email: "admin@bongkaran.com", 
+                pass: "admin123", 
+                nama: "Rizki Gautama, S.Kom OCNA", 
+                role: "admin", 
+                cabang: "all" 
+            },
+            { 
+                email: "kbmjaksaagung@klinikbungamelati.com", 
+                pass: "kbm123", 
+                nama: "Petugas KBM Jaksa Agung", 
+                role: "cabang", 
+                cabang: "KBM Jaksa Agung" 
+            },
+            { 
+                email: "kbmpanjaitan@klinikbungamelati.com", 
+                pass: "kbm123", 
+                nama: "Petugas KBM Panjaitan", 
+                role: "cabang", 
+                cabang: "KBM Panjaitan" 
+            },
+            { 
+                email: "kbmpajajaran@klinikbungamelati.com", 
+                pass: "kbm123", 
+                nama: "Petugas KBM Pajajaran", 
+                role: "cabang", 
+                cabang: "KBM Pajajaran" 
+            },
+            { 
+                email: "kbmpasuruan@klinikbungamelati.com", 
+                pass: "kbm123", 
+                nama: "Petugas KBM Pasuruan", 
+                role: "cabang", 
+                cabang: "KBM Pasuruan" 
+            }
         ];
 
         // Verifikasi Login
@@ -153,10 +183,12 @@
             if (akunDitemukan) {
                 errorMessage.classList.add('d-none');
                 
-                // Simpan status & nama akun ke sessionStorage
+                // Simpan data sesi login pengguna
                 sessionStorage.setItem('isLoggedIn', 'true');
                 sessionStorage.setItem('userName', akunDitemukan.nama);
                 sessionStorage.setItem('userEmail', akunDitemukan.email);
+                sessionStorage.setItem('userRole', akunDitemukan.role);
+                sessionStorage.setItem('userCabang', akunDitemukan.cabang);
 
                 window.location.href = 'index.html'; 
             } else {

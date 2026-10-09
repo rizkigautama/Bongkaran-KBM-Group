@@ -33,14 +33,20 @@ function switchTab(tabName) {
         document.getElementById('navRiwayat').classList.add('active');
         loadRiwayat();
     }
+
+    // Otomatis menutup sidebar setelah menu diklik
+    const sidebar = document.getElementById('appSidebar') || document.querySelector('.sidebar');
+    if (sidebar && !sidebar.classList.contains('collapsed')) {
+        sidebar.classList.add('collapsed');
+    }
 }
 
 // =======================================================================
-// MEMUAT STATISTIK DASHBOARD & CHART.JS
+// MEMUAT STATISTIK DASHBOARD, CHART.JS, & TABEL LAPORAN TERBARU
 // =======================================================================
 async function loadDashboardStats() {
     try {
-        const res = await fetch(STATS_URL);
+        const res = await fetch(`${STATS_URL}?_t=${Date.now()}`);
         if (!res.ok) return;
 
         const data = await res.json();
@@ -73,17 +79,80 @@ async function loadDashboardStats() {
                 scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }
         });
+
+        // Muat data laporan terbaru untuk tabel pengisi area bawah
+        loadRecentDashboardReports();
     } catch (err) {
         console.error('Gagal memuat statistik:', err);
     }
 }
 
-// =======================================================================
-// MEMUAT TABEL RIWAYAT DENGAN FILTER HAK AKSES PER CABANG
-// =======================================================================
-async function loadRiwayat() {
+// Memuat 5 data laporan paling baru untuk widget bawah grafik
+async function loadRecentDashboardReports() {
+    const tableBody = document.getElementById('tableBody_RecentDashboard');
+    if (!tableBody) return;
+
     const userRole = sessionStorage.getItem('userRole') || 'admin';
     const userCabang = sessionStorage.getItem('userCabang') || 'all';
+
+    try {
+        const response = await fetch(`${RIWAYAT_URL}?_t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        
+        let filteredData = data;
+        if (userRole === 'cabang' && userCabang !== 'all') {
+            filteredData = data.filter(item => item.lokasi === userCabang);
+        }
+
+        const recentData = filteredData.slice(0, 5);
+        tableBody.innerHTML = '';
+
+        if (recentData.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 15px; color: #6c757d;">Belum ada aktivitas laporan terbaru.</td></tr>';
+            return;
+        }
+
+        recentData.forEach((item, index) => {
+            const statusBadge = item.status === 'Terverifikasi'
+                ? `<span style="background-color: #198754; color: #ffffff; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">✅ Terverifikasi</span>`
+                : `<span style="background-color: #ffc107; color: #212529; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">⏳ Menunggu</span>`;
+
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid #dee2e6';
+            row.innerHTML = `
+                <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">${index + 1}</td>
+                <td style="padding: 12px 10px; vertical-align: middle;"><strong>${item.petugas}</strong><br><small style="color:#6c757d;">${item.jabatan}</small></td>
+                <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;"><span style="background:#e8f5e9; color:#1b5e20; padding:5px 10px; border-radius:6px; font-weight:600; font-size:0.82rem; white-space:nowrap; display:inline-block;">🏥 ${item.lokasi}</span></td>
+                <td style="padding: 12px 10px; vertical-align: middle; word-break: break-all;"><code>${item.filename}</code></td>
+                <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;">${item.created_at}</td>
+                <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">${statusBadge}</td>
+                <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">
+                    <button type="button" onclick="previewDokumen('${item.download_url}', '${item.filename}')" style="background-color: #0d6efd; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap;">
+                        👁️ Preview
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    } catch (err) {
+        console.error('Gagal memuat laporan terbaru dashboard:', err);
+    }
+}
+
+// =======================================================================
+// MEMUAT TABEL RIWAYAT SEMUA CABANG
+// =======================================================================
+async function loadRiwayat() {
+    const btnRefresh = document.querySelector("button[onclick='loadRiwayat()']");
+    if (btnRefresh) {
+        btnRefresh.disabled = true;
+        btnRefresh.innerHTML = '⌛ Memuat...';
+    }
 
     const branches = [
         { id: 'tableBody_JaksaAgung', name: 'KBM Jaksa Agung' },
@@ -92,8 +161,21 @@ async function loadRiwayat() {
         { id: 'tableBody_Pasuruan', name: 'KBM Pasuruan' }
     ];
 
+    branches.forEach(b => {
+        const tb = document.getElementById(b.id);
+        if (tb && tb.rows.length === 0) {
+            tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 15px; color: #6c757d;">Mengambil data terbaru...</td></tr>';
+        }
+    });
+
+    const userRole = sessionStorage.getItem('userRole') || 'admin';
+    const userCabang = sessionStorage.getItem('userCabang') || 'all';
+
     try {
-        const response = await fetch(RIWAYAT_URL);
+        const response = await fetch(`${RIWAYAT_URL}?_t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+        });
+
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         
         const data = await response.json();
@@ -104,8 +186,6 @@ async function loadRiwayat() {
 
             const cardBox = tableBody.closest('.card-box');
 
-            // PEMBATASAN HAK AKSES:
-            // Jika akun cabang, sembunyikan tabel milik cabang lain sepenuhnya
             if (userRole === 'cabang' && userCabang !== 'all' && branch.name !== userCabang) {
                 if (cardBox) cardBox.style.display = 'none';
                 return;
@@ -117,22 +197,52 @@ async function loadRiwayat() {
             tableBody.innerHTML = '';
 
             if (filteredData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 15px; color: #6c757d;">Belum ada dokumen laporan.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 15px; color: #6c757d;">Belum ada dokumen laporan.</td></tr>';
                 return;
             }
 
             filteredData.forEach((item, index) => {
+                const statusBadge = item.status === 'Terverifikasi'
+                    ? `<span style="background-color: #198754; color: #ffffff; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; line-height: 1;">
+                        ✅ Terverifikasi
+                       </span>`
+                    : `<span style="background-color: #ffc107; color: #212529; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; line-height: 1;">
+                        ⏳ Menunggu
+                       </span>`;
+
+                let actionButtons = `
+                    <button type="button" onclick="previewDokumen('${item.download_url}', '${item.filename}')" style="background-color: #0d6efd; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; cursor: pointer;">
+                        👁️ Preview
+                    </button>
+                `;
+
+                if (userRole === 'admin') {
+                    if (item.status !== 'Terverifikasi') {
+                        actionButtons += `
+                            <button type="button" onclick="verifikasiLaporan(${item.id})" style="background-color: #198754; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+                                ✔ Verifikasi
+                            </button>
+                        `;
+                    }
+                    actionButtons += `
+                        <button type="button" onclick="hapusLaporan(${item.id})" style="background-color: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+                            🗑 Hapus
+                        </button>
+                    `;
+                }
+
                 const row = document.createElement('tr');
                 row.style.borderBottom = '1px solid #dee2e6';
                 row.innerHTML = `
-                    <td style="padding: 10px;">${index + 1}</td>
-                    <td style="padding: 10px;"><strong>${item.petugas}</strong><br><small style="color:#6c757d;">${item.jabatan}</small></td>
-                    <td style="padding: 10px;"><code>${item.filename}</code></td>
-                    <td style="padding: 10px;">${item.created_at}</td>
-                    <td style="padding: 10px; text-align: center;">
-                        <a href="${item.download_url}" target="_blank" download style="background-color: #0d6efd; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.85rem; display: inline-block;">
-                            📥 Download
-                        </a>
+                    <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">${index + 1}</td>
+                    <td style="padding: 12px 10px; vertical-align: middle;"><strong>${item.petugas}</strong><br><small style="color:#6c757d;">${item.jabatan}</small></td>
+                    <td style="padding: 12px 10px; vertical-align: middle; word-break: break-all;"><code>${item.filename}</code></td>
+                    <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;">${item.created_at}</td>
+                    <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">${statusBadge}</td>
+                    <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">
+                        <div style="display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: nowrap; width: 100%;">
+                            ${actionButtons}
+                        </div>
                     </td>
                 `;
                 tableBody.appendChild(row);
@@ -140,6 +250,83 @@ async function loadRiwayat() {
         });
     } catch (error) {
         console.error('Gagal mengambil data:', error);
+        alert('Gagal memperbarui tabel. Pastikan server backend FastAPI (http://127.0.0.1:8000) aktif!');
+    } finally {
+        if (btnRefresh) {
+            btnRefresh.disabled = false;
+            btnRefresh.innerHTML = '🔄 Refresh Tabel';
+        }
+    }
+}
+
+// =======================================================================
+// FUNGSI PRATINJAU DOKUMEN (.DOCX) DENGAN MODAL
+// =======================================================================
+async function previewDokumen(fileUrl, fileName) {
+    const modal = document.getElementById('previewModal');
+    const container = document.getElementById('docxPreviewContainer');
+    const downloadBtn = document.getElementById('previewDownloadBtn');
+    
+    if (!modal || !container) return;
+
+    modal.style.display = 'flex';
+    container.innerHTML = '<div style="text-align:center; padding:40px; color:#6c757d; font-size:1rem;">⌛ Memuat pratinjau dokumen .docx...</div>';
+    downloadBtn.href = fileUrl;
+
+    try {
+        const response = await fetch(`${fileUrl}?_t=${Date.now()}`);
+        if (!response.ok) throw new Error('Gagal mengambil berkas dokumen.');
+
+        const blob = await response.blob();
+        container.innerHTML = '';
+
+        await docx.renderAsync(blob, container, null, {
+            className: 'docx-preview-wrapper',
+            inWrapper: true,
+            ignoreWidth: false,
+            ignoreHeight: false
+        });
+    } catch (err) {
+        console.error(err);
+        container.innerHTML = `<div style="color:#dc3545; text-align:center; padding:30px;">Gagal menampilkan pratinjau dokumen.<br><br><a href="${fileUrl}" download style="color:#0d6efd; font-weight:bold;">Unduh langsung berkas ${fileName}</a></div>`;
+    }
+}
+
+function closePreviewModal() {
+    const modal = document.getElementById('previewModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// =======================================================================
+// FUNGSI AKSI KHUSUS ADMIN: VERIFIKASI & HAPUS
+// =======================================================================
+async function verifikasiLaporan(id) {
+    if (confirm('Apakah Anda yakin ingin memverifikasi hasil pekerjaan ini?')) {
+        try {
+            const res = await fetch(`${BASE_URL}/api/laporan/${id}/verifikasi`, { method: 'PUT' });
+            if (!res.ok) throw new Error('Gagal memverifikasi laporan.');
+            
+            alert('Hasil pekerjaan berhasil diverifikasi!');
+            loadRiwayat();
+            loadDashboardStats();
+        } catch (err) {
+            alert(`Terjadi kesalahan: ${err.message}`);
+        }
+    }
+}
+
+async function hapusLaporan(id) {
+    if (confirm('Apakah Anda yakin ingin menghapus laporan ini secara permanen? File dokumen juga akan dihapus dari server.')) {
+        try {
+            const res = await fetch(`${BASE_URL}/api/laporan/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Gagal menghapus laporan.');
+            
+            alert('Laporan berhasil dihapus!');
+            loadRiwayat();
+            loadDashboardStats();
+        } catch (err) {
+            alert(`Terjadi kesalahan: ${err.message}`);
+        }
     }
 }
 
@@ -277,7 +464,6 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
         document.getElementById('uploadForm').reset();
         
-        // Kembalikan kunci dropdown lokasi jika akun cabang
         const userRole = sessionStorage.getItem('userRole');
         const userCabang = sessionStorage.getItem('userCabang');
         if (userRole === 'cabang' && userCabang !== 'all') {
@@ -294,8 +480,15 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 });
 
 // =======================================================================
-// FUNGSI LOGOUT
+// TOGGLE SIDEBAR & LOGOUT
 // =======================================================================
+function toggleSidebar() {
+    const sidebar = document.getElementById('appSidebar') || document.querySelector('.sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('collapsed');
+    }
+}
+
 function logout() {
     if (confirm('Apakah Anda yakin ingin keluar?')) {
         sessionStorage.clear();
@@ -305,34 +498,29 @@ function logout() {
 }
 
 // =======================================================================
-// INISIALISASI SAAT HALAMAN SELESAI DIMUAT
+// INISIALISASI HALAMAN
 // =======================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Tampilkan Nama User
+    // 1. Tampilkan Nama User & Status Peran yang Benar
     const activeUserName = sessionStorage.getItem('userName') || 'Rizki Gautama, S.Kom OCNA';
+    const userRole = sessionStorage.getItem('userRole') || 'admin';
+    const userCabang = sessionStorage.getItem('userCabang') || 'all';
+
+    const roleLabel = userRole === 'admin' ? '(Administrator)' : '(Petugas Cabang)';
+
     const userNameElement = document.getElementById('userNameDisplay');
     if (userNameElement) {
-        userNameElement.innerText = activeUserName;
+        userNameElement.innerText = `${activeUserName} ${roleLabel}`;
     }
 
     // 2. Kunci Dropdown Lokasi jika Akun Cabang
-    const userRole = sessionStorage.getItem('userRole') || 'admin';
-    const userCabang = sessionStorage.getItem('userCabang') || 'all';
     const lokasiDropdown = document.getElementById('lokasi');
-
     if (lokasiDropdown && userRole === 'cabang' && userCabang !== 'all') {
         lokasiDropdown.value = userCabang;
         lokasiDropdown.style.pointerEvents = 'none';
         lokasiDropdown.style.backgroundColor = '#e9ecef';
     }
 
-    // 3. Format Tanggal Header
-    const options = { day: '2-digit', month: 'short', year: 'numeric' };
-    const dateBadge = document.getElementById('currentDateBadge');
-    if (dateBadge) {
-        dateBadge.innerText = new Date().toLocaleDateString('id-ID', options);
-    }
-
-    // 4. Load Statistik Dashboard
+    // 3. Memuat Statistik Dashboard
     loadDashboardStats();
 });

@@ -6,7 +6,6 @@
         if (sessionStorage.getItem('isLoggedIn') !== 'true') {
             window.location.href = 'login.html';
         } else {
-            // Hapus sesi setelah verifikasi awal agar refresh memaksa login ulang
             sessionStorage.removeItem('isLoggedIn');
         }
     </script>
@@ -15,11 +14,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Bongkaran KBM</title>
     <link rel="stylesheet" href="style.css">
+    
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Library untuk Pratinjau Dokumen .docx di Browser -->
+    <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { display: flex; min-height: 100vh; background-color: #f4f6f9; }
+        body { display: flex; min-height: 100vh; background-color: #f4f6f9; overflow-x: hidden; }
 
         /* Sidebar Kiri */
         .sidebar {
@@ -30,7 +35,14 @@
             flex-direction: column;
             padding: 20px 15px;
             flex-shrink: 0;
+            transition: margin-left 0.3s ease;
+            z-index: 1000;
         }
+
+        .sidebar.collapsed {
+            margin-left: -250px;
+        }
+
         .sidebar-brand {
             display: flex;
             align-items: center;
@@ -61,7 +73,7 @@
         }
 
         /* Container Main Wrapper */
-        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; }
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; width: 100%; min-height: 100vh; }
         .top-header {
             background: #fff;
             padding: 15px 30px;
@@ -71,16 +83,24 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
         .top-header h1 { font-size: 1.3rem; color: #333; }
-        .date-badge {
+
+        .btn-toggle-sidebar {
             background-color: #1b5e20;
             color: white;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: bold;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        .btn-toggle-sidebar:hover {
+            background-color: #2e7d32;
         }
 
-        .content-body { padding: 25px 30px; }
+        .content-body { padding: 25px 30px; flex: 1; display: flex; flex-direction: column; }
 
         /* Stat Cards */
         .stats-grid {
@@ -120,12 +140,22 @@
             margin-bottom: 12px;
             font-size: 1.05rem;
         }
+
+        /* Footer Style */
+        .app-footer {
+            margin-top: auto;
+            padding: 20px 0 10px 0;
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.85rem;
+            border-top: 1px solid #e0e0e0;
+        }
     </style>
 </head>
 <body>
 
     <!-- SIDEBAR NAVIGATION -->
-    <aside class="sidebar">
+    <aside class="sidebar collapsed" id="appSidebar">
         <div class="sidebar-brand">
             <img src="assets/img/KBM.png" alt="Logo KBM">
             <h2>Bongkaran KBM</h2>
@@ -140,26 +170,28 @@
             <li class="nav-item" id="navRiwayat">
                 <a href="javascript:void(0)" onclick="switchTab('riwayat')">📂 Riwayat Dokumen</a>
             </li>
-            
-            <!-- TOMBOL LOGOUT MERAH -->
-            <li class="nav-item" style="margin-top: auto; padding-top: 20px;">
-                <a href="javascript:void(0)" onclick="logout()" style="background-color: #dc3545; color: white; justify-content: center; text-align: center; border-radius: 8px; font-weight: bold;">
-                    🚪 Keluar / Logout
-                </a>
-            </li>
         </ul>
     </aside>
 
     <!-- KONTEN UTAMA -->
     <div class="main-wrapper">
         <header class="top-header">
-            <div>
-                <h1>Dashboard Pekerjaan Bongkaran</h1>
-                <p style="font-size: 0.9rem; color: #6c757d;">
-                    Selamat Datang, <strong id="userNameDisplay" style="color: #1b5e20;">Rizki Gautama, S.Kom OCNA</strong>
-                </p>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button type="button" class="btn-toggle-sidebar" onclick="toggleSidebar()" title="Sembunyikan/Tampilkan Menu">
+                    ☰
+                </button>
+                <div>
+                    <h1>Dashboard Pekerjaan Bongkaran</h1>
+                    <p style="font-size: 0.9rem; color: #6c757d;">
+                        Selamat Datang, <strong id="userNameDisplay" style="color: #1b5e20;">Memuat User...</strong>
+                    </p>
+                </div>
             </div>
-            <div class="date-badge" id="currentDateBadge">06 Okt 2026</div>
+
+            <!-- TOMBOL LOGOUT ATAS -->
+            <button type="button" onclick="logout()" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                🚪 Keluar / Logout
+            </button>
         </header>
 
         <div class="content-body">
@@ -185,9 +217,38 @@
                     </div>
                 </div>
 
+                <!-- KARTU GRAFIK -->
                 <div class="card-box">
                     <h3 style="font-size: 1.1rem; color: #333; margin-bottom: 15px;">📈 Grafik Laporan Pekerjaan 7 Hari Terakhir</h3>
                     <canvas id="laporanChart" style="max-height: 320px;"></canvas>
+                </div>
+
+                <!-- KARTU LAPORAN TERBARU -->
+                <div class="card-box">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="font-size: 1.1rem; color: #1b5e20;">📌 Aktivitas Laporan Terbaru</h3>
+                        <button type="button" onclick="switchTab('riwayat')" style="background-color: #1b5e20; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">
+                            Lihat Semua Riwayat ➔
+                        </button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                            <thead>
+                                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                    <th style="padding: 10px; width: 40px; text-align: center;">No</th>
+                                    <th style="padding: 10px; width: 150px;">Petugas</th>
+                                    <th style="padding: 10px; width: 180px; white-space: nowrap;">Cabang Klinik</th>
+                                    <th style="padding: 10px;">Nama Dokumen (.docx)</th>
+                                    <th style="padding: 10px; width: 160px; white-space: nowrap;">Waktu Upload</th>
+                                    <th style="padding: 10px; width: 140px; text-align: center;">Status</th>
+                                    <th style="padding: 10px; width: 100px; text-align: center;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody_RecentDashboard">
+                                <tr><td colspan="7" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data laporan terbaru...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
@@ -294,18 +355,19 @@
                 <div class="card-box">
                     <h3 class="branch-title">🏥 KBM Jaksa Agung</h3>
                     <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
                             <thead>
                                 <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                                    <th style="padding: 10px; width: 40px;">No</th>
-                                    <th style="padding: 10px;">Petugas</th>
+                                    <th style="padding: 10px; width: 40px; text-align: center;">No</th>
+                                    <th style="padding: 10px; width: 160px;">Petugas</th>
                                     <th style="padding: 10px;">Nama Dokumen (.docx)</th>
-                                    <th style="padding: 10px;">Waktu Upload</th>
-                                    <th style="padding: 10px; text-align: center; width: 110px;">Aksi</th>
+                                    <th style="padding: 10px; width: 160px;">Waktu Upload</th>
+                                    <th style="padding: 10px; width: 140px; text-align: center;">Status</th>
+                                    <th style="padding: 10px; width: 280px; text-align: center;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody_JaksaAgung">
-                                <tr><td colspan="5" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
+                                <tr><td colspan="6" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -314,18 +376,19 @@
                 <div class="card-box">
                     <h3 class="branch-title">🏥 KBM Panjaitan</h3>
                     <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
                             <thead>
                                 <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                                    <th style="padding: 10px; width: 40px;">No</th>
-                                    <th style="padding: 10px;">Petugas</th>
+                                    <th style="padding: 10px; width: 40px; text-align: center;">No</th>
+                                    <th style="padding: 10px; width: 160px;">Petugas</th>
                                     <th style="padding: 10px;">Nama Dokumen (.docx)</th>
-                                    <th style="padding: 10px;">Waktu Upload</th>
-                                    <th style="padding: 10px; text-align: center; width: 110px;">Aksi</th>
+                                    <th style="padding: 10px; width: 160px;">Waktu Upload</th>
+                                    <th style="padding: 10px; width: 140px; text-align: center;">Status</th>
+                                    <th style="padding: 10px; width: 280px; text-align: center;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody_Panjaitan">
-                                <tr><td colspan="5" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
+                                <tr><td colspan="6" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -334,18 +397,19 @@
                 <div class="card-box">
                     <h3 class="branch-title">🏥 KBM Pajajaran</h3>
                     <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
                             <thead>
                                 <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                                    <th style="padding: 10px; width: 40px;">No</th>
-                                    <th style="padding: 10px;">Petugas</th>
+                                    <th style="padding: 10px; width: 40px; text-align: center;">No</th>
+                                    <th style="padding: 10px; width: 160px;">Petugas</th>
                                     <th style="padding: 10px;">Nama Dokumen (.docx)</th>
-                                    <th style="padding: 10px;">Waktu Upload</th>
-                                    <th style="padding: 10px; text-align: center; width: 110px;">Aksi</th>
+                                    <th style="padding: 10px; width: 160px;">Waktu Upload</th>
+                                    <th style="padding: 10px; width: 140px; text-align: center;">Status</th>
+                                    <th style="padding: 10px; width: 280px; text-align: center;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody_Pajajaran">
-                                <tr><td colspan="5" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
+                                <tr><td colspan="6" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -354,23 +418,30 @@
                 <div class="card-box">
                     <h3 class="branch-title">🏥 KBM Pasuruan</h3>
                     <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
                             <thead>
                                 <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                                    <th style="padding: 10px; width: 40px;">No</th>
-                                    <th style="padding: 10px;">Petugas</th>
+                                    <th style="padding: 10px; width: 40px; text-align: center;">No</th>
+                                    <th style="padding: 10px; width: 160px;">Petugas</th>
                                     <th style="padding: 10px;">Nama Dokumen (.docx)</th>
-                                    <th style="padding: 10px;">Waktu Upload</th>
-                                    <th style="padding: 10px; text-align: center; width: 110px;">Aksi</th>
+                                    <th style="padding: 10px; width: 160px;">Waktu Upload</th>
+                                    <th style="padding: 10px; width: 140px; text-align: center;">Status</th>
+                                    <th style="padding: 10px; width: 280px; text-align: center;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody_Pasuruan">
-                                <tr><td colspan="5" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
+                                <tr><td colspan="6" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </section>
+
+            <!-- FOOTER COPYRIGHT -->
+            <footer class="app-footer">
+                Hak Cipta &copy; Rizki Gautama 2026 Bongkaran KBM. All Rights Reserved.<br>
+                <span style="font-size: 0.8rem; color: #888;">Aplikasi Bongkaran KBM Group v1.0</span>
+            </footer>
 
         </div>
     </div>
@@ -387,9 +458,32 @@
         </div>
     </div>
 
+    <!-- MODAL PRATINJAU DOKUMEN (.DOCX) -->
+    <div id="previewModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:9999;">
+        <div style="background:#fff; padding:20px; border-radius:12px; width:90%; max-width:850px; height:85vh; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #ddd; padding-bottom:10px;">
+                <h3 style="font-size:1.1rem; color:#1b5e20; margin:0;">👁️ Pratinjau Dokumen Laporan</h3>
+                <div>
+                    <a id="previewDownloadBtn" href="#" target="_blank" download style="background-color:#0d6efd; color:white; padding:6px 12px; text-decoration:none; border-radius:6px; font-size:0.85rem; font-weight:bold; margin-right:8px;">📥 Unduh File</a>
+                    <button type="button" onclick="closePreviewModal()" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">✕ Tutup</button>
+                </div>
+            </div>
+            <div id="docxPreviewContainer" style="flex:1; overflow-y:auto; border:1px solid #eee; padding:20px; background:#fafafa; border-radius:6px;">
+                <p style="text-align:center; color:#6c757d; margin-top:40px;">Memuat pratinjau dokumen...</p>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 
     <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('appSidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('collapsed');
+            }
+        }
+
         function logout() {
             if (confirm('Apakah Anda yakin ingin keluar?')) {
                 sessionStorage.clear();
