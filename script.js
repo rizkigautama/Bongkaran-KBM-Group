@@ -9,10 +9,91 @@ const STATS_URL = `${BASE_URL}/api/dashboard-stats`;
 const state = {
     capturedFiles: { before: [], proses: [], after: [] },
     currentCategory: '',
-    mediaStream: null
+    mediaStream: null,
+    selectedUserForPhoto: ''
 };
 
 let chartInstance = null;
+
+// =======================================================================
+// INITIALIZATION DATABASE USER DALAM LOCAL STORAGE
+// =======================================================================
+function initUserDatabase() {
+    const existingUsers = localStorage.getItem('kbmUserAccounts');
+    if (!existingUsers) {
+        const defaultAccounts = [
+            { email: "admin@bongkaran.com", pass: "admin123", nama: "Rizki Gautama, S.Kom OCNA", role: "admin", cabang: "all" },
+            { email: "kbmjaksaagung@klinikbungamelati.com", pass: "kbm123", nama: "Petugas KBM Jaksa Agung", role: "cabang", cabang: "KBM Jaksa Agung" },
+            { email: "kbmpanjaitan@klinikbungamelati.com", pass: "kbm123", nama: "Petugas KBM Panjaitan", role: "cabang", cabang: "KBM Panjaitan" },
+            { email: "kbmpajajaran@klinikbungamelati.com", pass: "kbm123", nama: "Petugas KBM Pajajaran", role: "cabang", cabang: "KBM Pajajaran" },
+            { email: "kbmpasuruan@klinikbungamelati.com", pass: "kbm123", nama: "Petugas KBM Pasuruan", role: "cabang", cabang: "KBM Pasuruan" },
+            { email: "dprdita@klinikbungamelati.com", pass: "kbm123", nama: "Petugas DPP dr Dita (Sardo)", role: "cabang", cabang: "DPP dr Dita (Sardo)" },
+            { email: "dpreko@klinikbungamelati.com", pass: "kbm123", nama: "Petugas DPP dr Eko (Cakra)", role: "cabang", cabang: "DPP dr Eko (Cakra)" }
+        ];
+        localStorage.setItem('kbmUserAccounts', JSON.stringify(defaultAccounts));
+    }
+}
+
+// =======================================================================
+// FUNGSI TOGGLE SUBMENU SIDEBAR
+// =======================================================================
+function toggleSubMenu(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+    }
+}
+
+// =======================================================================
+// FUNGSI JAM DIGITAL LIVE & FORMAT TANGGAL INDONESIA
+// =======================================================================
+function startLiveClock() {
+    function updateClock() {
+        const now = new Date();
+        const timeElem = document.getElementById('liveClockTime');
+        const dateElem = document.getElementById('liveClockDate');
+        const subtextDateElem = document.getElementById('subtextDateHariIni');
+
+        if (timeElem) timeElem.innerText = now.toLocaleTimeString('id-ID', { hour12: false });
+
+        const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        const formattedDate = now.toLocaleDateString('id-ID', dateOptions);
+
+        if (dateElem) dateElem.innerText = formattedDate;
+        if (subtextDateElem) subtextDateElem.innerText = `Monitoring aktivitas tanggal ${formattedDate}`;
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+}
+
+// =======================================================================
+// FUNGSI PENCATAT AKTIVITAS USER
+// =======================================================================
+function recordActivityLog(aksi, detail) {
+    const activeUserName = sessionStorage.getItem('userName') || 'Anonim';
+    const activeUserEmail = sessionStorage.getItem('userEmail') || '-';
+    const activeUserRole = sessionStorage.getItem('userRole') || 'cabang';
+    const activeUserCabang = sessionStorage.getItem('userCabang') || 'Umum';
+
+    const currentLogs = JSON.parse(localStorage.getItem('kbmActivityLogs') || '[]');
+    const now = new Date();
+    const waktuStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + 
+                     ' ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    currentLogs.unshift({
+        nama: activeUserName,
+        email: activeUserEmail,
+        role: activeUserRole === 'admin' ? 'Administrator' : 'Petugas Cabang',
+        cabang: activeUserCabang === 'all' ? 'Semua Cabang' : activeUserCabang,
+        aksi: aksi,
+        detail: detail,
+        waktu: waktuStr,
+        perangkat: /Mobi|Android|iPhone/i.test(navigator.userAgent) ? '📱 Mobile (HP)' : '💻 Desktop (PC)'
+    });
+
+    localStorage.setItem('kbmActivityLogs', JSON.stringify(currentLogs.slice(0, 100)));
+}
 
 // =======================================================================
 // NAVIGASI TAB DASHBOARD
@@ -20,74 +101,392 @@ let chartInstance = null;
 function switchTab(tabName) {
     document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.sub-nav-item').forEach(item => item.classList.remove('active'));
 
     if (tabName === 'dashboard') {
-        document.getElementById('sectionDashboard').classList.add('active');
-        document.getElementById('navDashboard').classList.add('active');
+        const secDash = document.getElementById('sectionDashboard');
+        const navDash = document.getElementById('navDashboard');
+        if (secDash) secDash.classList.add('active');
+        if (navDash) navDash.classList.add('active');
         loadDashboardStats();
     } else if (tabName === 'form') {
-        document.getElementById('sectionForm').classList.add('active');
-        document.getElementById('navForm').classList.add('active');
+        const secForm = document.getElementById('sectionForm');
+        const navForm = document.getElementById('navForm');
+        if (secForm) secForm.classList.add('active');
+        if (navForm) navForm.classList.add('active');
     } else if (tabName === 'riwayat') {
-        document.getElementById('sectionRiwayat').classList.add('active');
-        document.getElementById('navRiwayat').classList.add('active');
+        const secRiwayat = document.getElementById('sectionRiwayat');
+        const navRiwayat = document.getElementById('navRiwayat');
+        if (secRiwayat) secRiwayat.classList.add('active');
+        if (navRiwayat) navRiwayat.classList.add('active');
         loadRiwayat();
+    } else if (tabName === 'profil') {
+        const secProfil = document.getElementById('sectionProfil');
+        const navProfil = document.getElementById('navProfil');
+        if (secProfil) secProfil.classList.add('active');
+        if (navProfil) navProfil.classList.add('active');
+        loadProfileData();
+    } else if (tabName === 'daftar-user') {
+        const secKelola = document.getElementById('sectionKelolaUser');
+        const navKelola = document.getElementById('navKelolaUser');
+        const subUser = document.getElementById('subDaftarUser');
+        if (secKelola) secKelola.classList.add('active');
+        if (navKelola) navKelola.classList.add('active');
+        if (subUser) subUser.classList.add('active');
+        loadUserList();
+    } else if (tabName === 'tracker') {
+        const secTracker = document.getElementById('sectionTracker');
+        const navTracker = document.getElementById('navTracker');
+        if (secTracker) secTracker.classList.add('active');
+        if (navTracker) navTracker.classList.add('active');
+        loadLoginTracker();
     }
 
-    // Otomatis menutup sidebar setelah menu diklik
     const sidebar = document.getElementById('appSidebar') || document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
     if (sidebar && !sidebar.classList.contains('collapsed')) {
         sidebar.classList.add('collapsed');
+        if (overlay) overlay.classList.remove('active');
     }
 }
 
 // =======================================================================
-// MEMUAT STATISTIK DASHBOARD, CHART.JS, & TABEL LAPORAN TERBARU
+// FUNGSI PROFIL PETUGAS & UNGGAH FOTO PROFIL (FIXED MULTI-UPLOAD)
+// =======================================================================
+function loadProfileData() {
+    const activeUserName = sessionStorage.getItem('userName') || 'Rizki Gautama, S.Kom OCNA';
+    const activeUserEmail = sessionStorage.getItem('userEmail') || 'admin@bongkaran.com';
+    const userRole = sessionStorage.getItem('userRole') || 'admin';
+    const userCabang = sessionStorage.getItem('userCabang') || 'all';
+
+    if (document.getElementById('profileNamaText')) document.getElementById('profileNamaText').innerText = activeUserName;
+    if (document.getElementById('profileRoleText')) {
+        document.getElementById('profileRoleText').innerText = userRole === 'admin' ? '👑 Administrator Utama' : '👤 Petugas Cabang';
+    }
+    if (document.getElementById('profileCabangText')) {
+        document.getElementById('profileCabangText').innerText = `🏥 ${userCabang === 'all' ? 'Semua Cabang Klinik' : userCabang}`;
+    }
+
+    const savedPhoto = localStorage.getItem(`profilePhoto_${activeUserEmail}`);
+    if (savedPhoto && document.getElementById('profileAvatarImg')) {
+        document.getElementById('profileAvatarImg').src = savedPhoto;
+    }
+}
+
+function uploadProfilePhoto(event) {
+    const file = event.target.files[0];
+    const activeUserEmail = sessionStorage.getItem('userEmail') || 'admin@bongkaran.com';
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64Img = e.target.result;
+            localStorage.setItem(`profilePhoto_${activeUserEmail}`, base64Img);
+            if (document.getElementById('profileAvatarImg')) {
+                document.getElementById('profileAvatarImg').src = base64Img;
+            }
+            recordActivityLog('Ganti Foto Profil', 'Memperbarui foto profil pengguna');
+            alert('Foto profil berhasil diperbarui!');
+            loadUserList();
+        };
+        reader.readAsDataURL(file);
+    }
+    // Reset nilai input agar dapat mengganti foto secara berulang kali
+    event.target.value = '';
+}
+
+// Form Ubah Kata Sandi Mandiri oleh User
+document.getElementById('changePasswordForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    initUserDatabase();
+
+    const activeUserEmail = sessionStorage.getItem('userEmail');
+    const oldPass = document.getElementById('oldPasswordInput').value;
+    const newPass = document.getElementById('newPasswordInput').value;
+    const confirmPass = document.getElementById('confirmPasswordInput').value;
+
+    let users = JSON.parse(localStorage.getItem('kbmUserAccounts') || '[]');
+    const userIndex = users.findIndex(u => u.email === activeUserEmail);
+
+    if (userIndex === -1) {
+        alert('Sesi pengguna tidak ditemukan.');
+        return;
+    }
+
+    if (users[userIndex].pass !== oldPass) {
+        alert('Kata sandi lama Anda salah!');
+        return;
+    }
+
+    if (newPass !== confirmPass) {
+        alert('Konfirmasi kata sandi baru tidak cocok!');
+        return;
+    }
+
+    users[userIndex].pass = newPass;
+    localStorage.setItem('kbmUserAccounts', JSON.stringify(users));
+
+    recordActivityLog('Ubah Sandi', 'Pengguna memperbarui kata sandi akun');
+    alert('Kata sandi berhasil diubah! Silakan gunakan kata sandi baru untuk login berikutnya.');
+    this.reset();
+});
+
+// =======================================================================
+// FUNGSI MEMUAT DAFTAR USER & MODAL LIHAT/GANTI FOTO PROFIL USER (FIXED)
+// =======================================================================
+function loadUserList() {
+    const tableBody = document.getElementById('tableBody_DaftarUser');
+    if (!tableBody) return;
+
+    const userRole = sessionStorage.getItem('userRole') || 'admin';
+    if (userRole !== 'admin') {
+        tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px; color:red;">Akses Ditolak.</td></tr>';
+        return;
+    }
+
+    initUserDatabase();
+    const users = JSON.parse(localStorage.getItem('kbmUserAccounts') || '[]');
+    tableBody.innerHTML = '';
+
+    if (users.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px; color:#6c757d;">Belum ada user terdaftar.</td></tr>';
+        return;
+    }
+
+    users.forEach((user, idx) => {
+        const roleBadge = user.role === 'admin' 
+            ? `<span style="background-color:#198754; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">👑 Admin</span>`
+            : `<span style="background-color:#0d6efd; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">👤 Cabang</span>`;
+
+        const userPhoto = localStorage.getItem(`profilePhoto_${user.email}`) || 'assets/img/KBM.png';
+
+        let actionBtns = `
+            <button type="button" onclick="openProfileModalForUser('${user.email}')" style="background:#0d6efd; color:white; border:none; padding:5px 9px; border-radius:4px; cursor:pointer; font-size:0.78rem; font-weight:bold; margin-right:4px;">👁️ Profil</button>
+            <button type="button" onclick="resetPasswordUser('${user.email}')" style="background:#ffc107; color:#212529; border:none; padding:5px 9px; border-radius:4px; cursor:pointer; font-size:0.78rem; font-weight:bold; margin-right:4px;">🔑 Reset Pass</button>
+        `;
+        
+        if (user.email !== 'admin@bongkaran.com') {
+            actionBtns += `<button type="button" onclick="hapusUser('${user.email}')" style="background:#dc3545; color:white; border:none; padding:5px 9px; border-radius:4px; cursor:pointer; font-size:0.78rem; font-weight:bold;">🗑️ Hapus</button>`;
+        }
+
+        const row = document.createElement('tr');
+        row.style.borderBottom = '1px solid #dee2e6';
+        row.innerHTML = `
+            <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">${idx + 1}</td>
+            <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">
+                <img src="${userPhoto}" onerror="this.onerror=null; this.src='assets/img/KBM%20.png';" style="width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid #1b5e20;">
+            </td>
+            <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;"><strong>${user.nama}</strong></td>
+            <td style="padding: 12px 10px; vertical-align: middle;"><code>${user.email}</code></td>
+            <td style="padding: 12px 10px; vertical-align: middle;">${roleBadge}</td>
+            <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;">🏥 ${user.cabang === 'all' ? 'Semua Cabang' : user.cabang}</td>
+            <td style="padding: 12px 10px; text-align: center; vertical-align: middle; white-space: nowrap;">${actionBtns}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+function openProfileModalForUser(email) {
+    const users = JSON.parse(localStorage.getItem('kbmUserAccounts') || '[]');
+    const user = users.find(u => u.email === email);
+    if (!user) return;
+
+    state.selectedUserForPhoto = email;
+    const userPhoto = localStorage.getItem(`profilePhoto_${email}`) || 'assets/img/KBM.png';
+
+    if (document.getElementById('adminUserModalAvatar')) document.getElementById('adminUserModalAvatar').src = userPhoto;
+    if (document.getElementById('adminUserModalNama')) document.getElementById('adminUserModalNama').innerText = user.nama;
+    if (document.getElementById('adminUserModalEmail')) document.getElementById('adminUserModalEmail').innerText = user.email;
+    if (document.getElementById('adminUserModalCabang')) {
+        document.getElementById('adminUserModalCabang').innerText = `🏥 ${user.cabang === 'all' ? 'Semua Cabang Klinik' : user.cabang}`;
+    }
+
+    document.getElementById('adminUserProfileModal').style.display = 'flex';
+}
+
+function closeAdminUserProfileModal() {
+    document.getElementById('adminUserProfileModal').style.display = 'none';
+    state.selectedUserForPhoto = '';
+}
+
+function uploadPhotoForSelectedUser(event) {
+    const file = event.target.files[0];
+    const targetEmail = state.selectedUserForPhoto;
+
+    if (file && targetEmail) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64Img = e.target.result;
+            localStorage.setItem(`profilePhoto_${targetEmail}`, base64Img);
+            if (document.getElementById('adminUserModalAvatar')) {
+                document.getElementById('adminUserModalAvatar').src = base64Img;
+            }
+            recordActivityLog('Ganti Foto User', `Admin mengganti foto profil user (${targetEmail})`);
+            alert('Foto profil user berhasil diperbarui!');
+            loadUserList();
+        };
+        reader.readAsDataURL(file);
+    }
+    // Reset nilai input agar dapat mengganti foto secara berulang kali
+    event.target.value = '';
+}
+
+function resetPasswordUser(email) {
+    const newPass = prompt(`Masukkan Kata Sandi baru untuk user (${email}):`, 'kbm123');
+    if (newPass) {
+        let users = JSON.parse(localStorage.getItem('kbmUserAccounts') || '[]');
+        const idx = users.findIndex(u => u.email === email);
+        if (idx !== -1) {
+            users[idx].pass = newPass;
+            localStorage.setItem('kbmUserAccounts', JSON.stringify(users));
+            recordActivityLog('Reset Pass User', `Admin mereset kata sandi akun: ${email}`);
+            alert(`Kata sandi akun ${email} berhasil direset menjadi: ${newPass}`);
+        }
+    }
+}
+
+function openModalTambahUser() {
+    document.getElementById('userModal').style.display = 'flex';
+}
+
+function closeUserModal() {
+    document.getElementById('userModal').style.display = 'none';
+    document.getElementById('addUserForm').reset();
+}
+
+function handleRoleChangeInModal() {
+    const roleSelect = document.getElementById('addRole');
+    const cabangSelect = document.getElementById('addCabang');
+    if (roleSelect.value === 'admin') {
+        cabangSelect.value = 'all';
+        cabangSelect.disabled = true;
+    } else {
+        cabangSelect.disabled = false;
+    }
+}
+
+document.getElementById('addUserForm')?.addEventListener('submit', function (e) {
+    e.preventDefault();
+    initUserDatabase();
+
+    const namaInput = document.getElementById('addNama').value.trim();
+    const gelarInput = document.getElementById('addGelar') ? document.getElementById('addGelar').value.trim() : '';
+    const email = document.getElementById('addEmail').value.trim().toLowerCase();
+    const pass = document.getElementById('addPass').value;
+    const role = document.getElementById('addRole').value;
+    const cabang = role === 'admin' ? 'all' : document.getElementById('addCabang').value;
+
+    // Gabungkan Nama dan Gelar jika Gelar diisi
+    const namaLengkap = gelarInput ? `${namaInput}, ${gelarInput}` : namaInput;
+
+    const users = JSON.parse(localStorage.getItem('kbmUserAccounts') || '[]');
+
+    if (users.some(u => u.email === email)) {
+        alert('Email ini sudah terdaftar!');
+        return;
+    }
+
+    users.push({ email, pass, nama: namaLengkap, role, cabang });
+    localStorage.setItem('kbmUserAccounts', JSON.stringify(users));
+
+    recordActivityLog('Tambah User', `Menambahkan user baru: ${namaLengkap} (${email})`);
+    alert('User berhasil ditambahkan!');
+    closeUserModal();
+    loadUserList();
+});
+
+function hapusUser(email) {
+    if (confirm(`Apakah Anda yakin ingin menghapus user dengan email ${email}?`)) {
+        let users = JSON.parse(localStorage.getItem('kbmUserAccounts') || '[]');
+        users = users.filter(u => u.email !== email);
+        localStorage.setItem('kbmUserAccounts', JSON.stringify(users));
+
+        recordActivityLog('Hapus User', `Menghapus user: ${email}`);
+        alert('User berhasil dihapus!');
+        loadUserList();
+    }
+}
+
+// =======================================================================
+// MEMUAT STATISTIK KARTU & KOTAK ANALITIK
 // =======================================================================
 async function loadDashboardStats() {
     try {
-        const res = await fetch(`${STATS_URL}?_t=${Date.now()}`);
-        if (!res.ok) return;
+        const resStats = await fetch(`${STATS_URL}?_t=${Date.now()}`);
+        if (resStats.ok) {
+            const dataStats = await resStats.json();
 
-        const data = await res.json();
-        document.getElementById('statHariIni').innerText = data.hari_ini;
-        document.getElementById('statBulanIni').innerText = data.bulan_ini;
-        document.getElementById('statTotalCabang').innerText = data.total_cabang;
-        document.getElementById('statTotalDokumen').innerText = data.total_dokumen;
+            const chartElem = document.getElementById('laporanChart');
+            if (chartElem) {
+                const ctx = chartElem.getContext('2d');
+                if (chartInstance) chartInstance.destroy();
 
-        const ctx = document.getElementById('laporanChart').getContext('2d');
-        if (chartInstance) chartInstance.destroy();
-
-        chartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: data.chart_labels,
-                datasets: [{
-                    label: 'Jumlah Laporan Pekerjaan',
-                    data: data.chart_data,
-                    borderColor: '#1b5e20',
-                    backgroundColor: 'rgba(27, 94, 32, 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    borderWidth: 3,
-                    pointRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dataStats.chart_labels,
+                        datasets: [{
+                            label: 'Jumlah Laporan Pekerjaan',
+                            data: dataStats.chart_data,
+                            borderColor: '#1b5e20',
+                            backgroundColor: 'rgba(27, 94, 32, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            borderWidth: 3,
+                            pointRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    }
+                });
             }
-        });
+        }
 
-        // Muat data laporan terbaru untuk tabel pengisi area bawah
+        const resRiwayat = await fetch(`${RIWAYAT_URL}?_t=${Date.now()}`);
+        if (resRiwayat.ok) {
+            const allLaporan = await resRiwayat.json();
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            const todayLaporan = allLaporan.filter(item => {
+                const tglItem = item.tanggal || item.created_at.split(' ')[0];
+                return tglItem === todayStr;
+            });
+
+            const todayTotal = todayLaporan.length;
+            const todayValid = todayLaporan.filter(i => i.status === 'Terverifikasi').length;
+            const todayPending = todayLaporan.filter(i => i.status !== 'Terverifikasi' && i.status !== 'Ditolak').length;
+            const todayRejected = todayLaporan.filter(i => i.status === 'Ditolak').length;
+
+            const allTotal = allLaporan.length;
+            const allValid = allLaporan.filter(i => i.status === 'Terverifikasi').length;
+            const allPending = allLaporan.filter(i => i.status !== 'Terverifikasi' && i.status !== 'Ditolak').length;
+            const allRejected = allLaporan.filter(i => i.status === 'Ditolak').length;
+
+            if (document.getElementById('statHariIni')) document.getElementById('statHariIni').innerText = todayTotal;
+            if (document.getElementById('statTotalCabang')) document.getElementById('statTotalCabang').innerText = '6';
+            if (document.getElementById('statMenunggu')) document.getElementById('statMenunggu').innerText = allPending;
+            if (document.getElementById('statTotalDokumen')) document.getElementById('statTotalDokumen').innerText = allTotal;
+
+            if (document.getElementById('metricTodayTotal')) document.getElementById('metricTodayTotal').innerText = todayTotal;
+            if (document.getElementById('metricTodayValid')) document.getElementById('metricTodayValid').innerText = todayValid;
+            if (document.getElementById('metricTodayPending')) document.getElementById('metricTodayPending').innerText = todayPending;
+            if (document.getElementById('metricTodayRejected')) document.getElementById('metricTodayRejected').innerText = todayRejected;
+
+            if (document.getElementById('metricAllTotal')) document.getElementById('metricAllTotal').innerText = allTotal;
+            if (document.getElementById('metricAllValid')) document.getElementById('metricAllValid').innerText = allValid;
+            if (document.getElementById('metricAllPending')) document.getElementById('metricAllPending').innerText = allPending;
+            if (document.getElementById('metricAllRejected')) document.getElementById('metricAllRejected').innerText = allRejected;
+        }
+
         loadRecentDashboardReports();
     } catch (err) {
         console.error('Gagal memuat statistik:', err);
     }
 }
 
-// Memuat 5 data laporan paling baru untuk widget bawah grafik
 async function loadRecentDashboardReports() {
     const tableBody = document.getElementById('tableBody_RecentDashboard');
     if (!tableBody) return;
@@ -126,7 +525,7 @@ async function loadRecentDashboardReports() {
             row.style.borderBottom = '1px solid #dee2e6';
             row.innerHTML = `
                 <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">${index + 1}</td>
-                <td style="padding: 12px 10px; vertical-align: middle;"><strong>${item.petugas}</strong><br><small style="color:#6c757d;">${item.jabatan}</small></td>
+                <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;"><strong>${item.petugas}</strong><br><small style="color:#6c757d;">${item.jabatan}</small></td>
                 <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;"><span style="background:#e8f5e9; color:#1b5e20; padding:5px 10px; border-radius:6px; font-weight:600; font-size:0.82rem; white-space:nowrap; display:inline-block;">🏥 ${item.lokasi}</span></td>
                 <td style="padding: 12px 10px; vertical-align: middle; word-break: break-all;"><code>${item.filename}</code></td>
                 <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;">${item.created_at}</td>
@@ -158,18 +557,24 @@ async function loadRiwayat() {
         { id: 'tableBody_JaksaAgung', name: 'KBM Jaksa Agung' },
         { id: 'tableBody_Panjaitan', name: 'KBM Panjaitan' },
         { id: 'tableBody_Pajajaran', name: 'KBM Pajajaran' },
-        { id: 'tableBody_Pasuruan', name: 'KBM Pasuruan' }
+        { id: 'tableBody_Pasuruan', name: 'KBM Pasuruan' },
+        { id: 'tableBody_DitaSardo', name: 'DPP dr Dita (Sardo)' },
+        { id: 'tableBody_EkoCakra', name: 'DPP dr Eko (Cakra)' }
     ];
 
     branches.forEach(b => {
         const tb = document.getElementById(b.id);
         if (tb && tb.rows.length === 0) {
-            tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 15px; color: #6c757d;">Mengambil data terbaru...</td></tr>';
+            tb.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 15px; color: #6c757d;">Mengambil data terbaru...</td></tr>';
         }
     });
 
     const userRole = sessionStorage.getItem('userRole') || 'admin';
     const userCabang = sessionStorage.getItem('userCabang') || 'all';
+
+    const tglMulai = document.getElementById('filterTanggalMulai')?.value;
+    const tglSelesai = document.getElementById('filterTanggalSelesai')?.value;
+    const searchKey = document.getElementById('filterSearchKey')?.value.toLowerCase().trim();
 
     try {
         const response = await fetch(`${RIWAYAT_URL}?_t=${Date.now()}`, {
@@ -193,11 +598,33 @@ async function loadRiwayat() {
                 if (cardBox) cardBox.style.display = 'block';
             }
 
-            const filteredData = data.filter(item => item.lokasi === branch.name);
+            let filteredData = data.filter(item => item.lokasi === branch.name);
+
+            if (tglMulai) {
+                filteredData = filteredData.filter(item => {
+                    const itemDate = item.tanggal || item.created_at.split(' ')[0];
+                    return itemDate >= tglMulai;
+                });
+            }
+            if (tglSelesai) {
+                filteredData = filteredData.filter(item => {
+                    const itemDate = item.tanggal || item.created_at.split(' ')[0];
+                    return itemDate <= tglSelesai;
+                });
+            }
+
+            if (searchKey) {
+                filteredData = filteredData.filter(item => 
+                    (item.petugas && item.petugas.toLowerCase().includes(searchKey)) ||
+                    (item.jabatan && item.jabatan.toLowerCase().includes(searchKey)) ||
+                    (item.filename && item.filename.toLowerCase().includes(searchKey))
+                );
+            }
+
             tableBody.innerHTML = '';
 
             if (filteredData.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 15px; color: #6c757d;">Belum ada dokumen laporan.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 15px; color: #6c757d;">Belum ada dokumen laporan yang sesuai kriteria.</td></tr>';
                 return;
             }
 
@@ -235,7 +662,8 @@ async function loadRiwayat() {
                 row.style.borderBottom = '1px solid #dee2e6';
                 row.innerHTML = `
                     <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">${index + 1}</td>
-                    <td style="padding: 12px 10px; vertical-align: middle;"><strong>${item.petugas}</strong><br><small style="color:#6c757d;">${item.jabatan}</small></td>
+                    <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;"><strong>${item.petugas}</strong><br><small style="color:#6c757d;">${item.jabatan}</small></td>
+                    <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;">${item.tanggal || '-'}</td>
                     <td style="padding: 12px 10px; vertical-align: middle; word-break: break-all;"><code>${item.filename}</code></td>
                     <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;">${item.created_at}</td>
                     <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">${statusBadge}</td>
@@ -259,6 +687,111 @@ async function loadRiwayat() {
     }
 }
 
+function resetFilterTanggal() {
+    if (document.getElementById('filterTanggalMulai')) document.getElementById('filterTanggalMulai').value = '';
+    if (document.getElementById('filterTanggalSelesai')) document.getElementById('filterTanggalSelesai').value = '';
+    if (document.getElementById('filterSearchKey')) document.getElementById('filterSearchKey').value = '';
+    loadRiwayat();
+}
+
+// =======================================================================
+// FUNGSI MEMUAT LOG TRACKER LOGIN & AKTIVITAS
+// =======================================================================
+function loadLoginTracker() {
+    const btnRefresh = document.querySelector("button[onclick='loadLoginTracker()']");
+    if (btnRefresh) {
+        btnRefresh.disabled = true;
+        btnRefresh.innerHTML = '⌛ Memuat...';
+    }
+
+    const tableLoginBody = document.getElementById('tableBody_LoginTracker');
+    const tableActivityBody = document.getElementById('tableBody_ActivityTracker');
+
+    const userRole = sessionStorage.getItem('userRole') || 'admin';
+    if (userRole !== 'admin') {
+        if (tableLoginBody) tableLoginBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px; color:red;">Akses Ditolak. Halaman ini hanya untuk Administrator.</td></tr>';
+        if (btnRefresh) {
+            btnRefresh.disabled = false;
+            btnRefresh.innerHTML = '🔄 Refresh Log';
+        }
+        return;
+    }
+
+    try {
+        const loginLogs = JSON.parse(localStorage.getItem('kbmLoginLogs') || '[]');
+        if (tableLoginBody) {
+            tableLoginBody.innerHTML = '';
+            if (loginLogs.length === 0) {
+                tableLoginBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px; color:#6c757d;">Belum ada riwayat aktivitas login.</td></tr>';
+            } else {
+                loginLogs.forEach((log, idx) => {
+                    const roleBadge = log.role === 'Administrator' 
+                        ? `<span style="background-color:#198754; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold; white-space:nowrap;">👑 Admin</span>`
+                        : `<span style="background-color:#0d6efd; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold; white-space:nowrap;">👤 Cabang</span>`;
+
+                    const row = document.createElement('tr');
+                    row.style.borderBottom = '1px solid #dee2e6';
+                    row.innerHTML = `
+                        <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">${idx + 1}</td>
+                        <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;"><strong>${log.nama}</strong></td>
+                        <td style="padding: 12px 10px; vertical-align: middle;"><code>${log.email}</code></td>
+                        <td style="padding: 12px 10px; vertical-align: middle;">${roleBadge}</td>
+                        <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;">🏥 ${log.cabang}</td>
+                        <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;">${log.waktu}</td>
+                        <td style="padding: 12px 10px; text-align: center; vertical-align: middle; white-space: nowrap;">${log.perangkat}</td>
+                    `;
+                    tableLoginBody.appendChild(row);
+                });
+            }
+        }
+
+        const actLogs = JSON.parse(localStorage.getItem('kbmActivityLogs') || '[]');
+        if (tableActivityBody) {
+            tableActivityBody.innerHTML = '';
+            if (actLogs.length === 0) {
+                tableActivityBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#6c757d;">Belum ada riwayat aktivitas user.</td></tr>';
+            } else {
+                actLogs.forEach((log, idx) => {
+                    let badgeColor = '#6c757d';
+                    if (log.aksi === 'Kirim Laporan') badgeColor = '#198754';
+                    else if (log.aksi === 'Verifikasi Laporan') badgeColor = '#0d6efd';
+                    else if (log.aksi === 'Hapus Laporan') badgeColor = '#dc3545';
+                    else if (log.aksi === 'Preview Dokumen') badgeColor = '#0dcaf0';
+
+                    const row = document.createElement('tr');
+                    row.style.borderBottom = '1px solid #dee2e6';
+                    row.innerHTML = `
+                        <td style="padding: 12px 10px; text-align: center; vertical-align: middle;">${idx + 1}</td>
+                        <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;"><strong>${log.nama}</strong><br><small style="color:#6c757d;">${log.cabang}</small></td>
+                        <td style="padding: 12px 10px; vertical-align: middle;"><span style="background-color:${badgeColor}; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold; white-space:nowrap;">${log.aksi}</span></td>
+                        <td style="padding: 12px 10px; vertical-align: middle;">${log.detail}</td>
+                        <td style="padding: 12px 10px; vertical-align: middle; white-space: nowrap;">${log.waktu}</td>
+                        <td style="padding: 12px 10px; text-align: center; vertical-align: middle; white-space: nowrap;">${log.perangkat}</td>
+                    `;
+                    tableActivityBody.appendChild(row);
+                });
+            }
+        }
+    } catch (err) {
+        console.error('Gagal memuat log tracker:', err);
+    } finally {
+        if (btnRefresh) {
+            setTimeout(() => {
+                btnRefresh.disabled = false;
+                btnRefresh.innerHTML = '🔄 Refresh Log';
+            }, 300);
+        }
+    }
+}
+
+function clearLoginTracker() {
+    if (confirm('Apakah Anda yakin ingin menghapus seluruh riwayat log login & aktivitas user?')) {
+        localStorage.removeItem('kbmLoginLogs');
+        localStorage.removeItem('kbmActivityLogs');
+        loadLoginTracker();
+    }
+}
+
 // =======================================================================
 // FUNGSI PRATINJAU DOKUMEN (.DOCX) DENGAN MODAL
 // =======================================================================
@@ -268,6 +801,8 @@ async function previewDokumen(fileUrl, fileName) {
     const downloadBtn = document.getElementById('previewDownloadBtn');
     
     if (!modal || !container) return;
+
+    recordActivityLog('Preview Dokumen', `Melihat berkas: ${fileName}`);
 
     modal.style.display = 'flex';
     container.innerHTML = '<div style="text-align:center; padding:40px; color:#6c757d; font-size:1rem;">⌛ Memuat pratinjau dokumen .docx...</div>';
@@ -306,6 +841,7 @@ async function verifikasiLaporan(id) {
             const res = await fetch(`${BASE_URL}/api/laporan/${id}/verifikasi`, { method: 'PUT' });
             if (!res.ok) throw new Error('Gagal memverifikasi laporan.');
             
+            recordActivityLog('Verifikasi Laporan', `Memverifikasi Laporan ID #${id}`);
             alert('Hasil pekerjaan berhasil diverifikasi!');
             loadRiwayat();
             loadDashboardStats();
@@ -321,6 +857,7 @@ async function hapusLaporan(id) {
             const res = await fetch(`${BASE_URL}/api/laporan/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Gagal menghapus laporan.');
             
+            recordActivityLog('Hapus Laporan', `Menghapus Laporan ID #${id}`);
             alert('Laporan berhasil dihapus!');
             loadRiwayat();
             loadDashboardStats();
@@ -434,7 +971,7 @@ window.removeFile = function(category, index) {
 };
 
 // =======================================================================
-// PENGIRIMAN FORM LAPORAN
+// PENGIRIMAN FORM LAPORAN DENGAN GELAR
 // =======================================================================
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -444,11 +981,20 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         return;
     }
 
+    const petugasVal = document.getElementById('petugas').value.trim();
+    const gelarVal = document.getElementById('gelar') ? document.getElementById('gelar').value.trim() : '';
+    const divisiVal = document.getElementById('divisi').value;
+    const lokasiVal = document.getElementById('lokasi').value;
+
+    const namaLengkapPetugas = gelarVal ? `${petugasVal}, ${gelarVal}` : petugasVal;
+
     const formData = new FormData();
-    formData.append('petugas', document.getElementById('petugas').value);
-    formData.append('jabatan', document.getElementById('jabatan').value);
+    formData.append('petugas', namaLengkapPetugas);
+    formData.append('gelar', gelarVal);
+    formData.append('divisi', divisiVal);
+    formData.append('jabatan', divisiVal);
     formData.append('tanggal', document.getElementById('tanggal').value);
-    formData.append('lokasi', document.getElementById('lokasi').value);
+    formData.append('lokasi', lokasiVal);
     formData.append('keterangan', document.getElementById('keterangan').value);
 
     before.forEach((blob, idx) => formData.append('before_images', blob, `before_${idx + 1}.jpg`));
@@ -458,6 +1004,8 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     try {
         const res = await fetch(API_URL, { method: 'POST', body: formData });
         if (!res.ok) throw new Error('Gagal menyimpan laporan.');
+
+        recordActivityLog('Kirim Laporan', `Petugas: ${namaLengkapPetugas}, Divisi: ${divisiVal}, Lokasi: ${lokasiVal}`);
 
         document.getElementById('successAlert').style.display = 'block';
         setTimeout(() => document.getElementById('successAlert').style.display = 'none', 5000);
@@ -473,35 +1021,18 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         state.capturedFiles = { before: [], proses: [], after: [] };
         ['Before', 'Proses', 'After'].forEach(c => document.getElementById(`previewContainer${c}`).innerHTML = '');
         
-        switchTab('dashboard');
+        switchTab('riwayat');
     } catch (err) {
         alert(err.message);
     }
 });
 
 // =======================================================================
-// TOGGLE SIDEBAR & LOGOUT
-// =======================================================================
-function toggleSidebar() {
-    const sidebar = document.getElementById('appSidebar') || document.querySelector('.sidebar');
-    if (sidebar) {
-        sidebar.classList.toggle('collapsed');
-    }
-}
-
-function logout() {
-    if (confirm('Apakah Anda yakin ingin keluar?')) {
-        sessionStorage.clear();
-        localStorage.clear();
-        window.location.href = 'login.html';
-    }
-}
-
-// =======================================================================
-// INISIALISASI HALAMAN
+// INISIALISASI HALAMAN & JAM DIGITAL LIVE
 // =======================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Tampilkan Nama User & Status Peran yang Benar
+    initUserDatabase();
+
     const activeUserName = sessionStorage.getItem('userName') || 'Rizki Gautama, S.Kom OCNA';
     const userRole = sessionStorage.getItem('userRole') || 'admin';
     const userCabang = sessionStorage.getItem('userCabang') || 'all';
@@ -513,14 +1044,42 @@ document.addEventListener('DOMContentLoaded', () => {
         userNameElement.innerText = `${activeUserName} ${roleLabel}`;
     }
 
-    // 2. Kunci Dropdown Lokasi jika Akun Cabang
+    const welcomeNameElement = document.getElementById('welcomeUserName');
+    if (welcomeNameElement) {
+        welcomeNameElement.innerText = activeUserName;
+    }
+
+    const roleBadgeElement = document.getElementById('dashRoleBadge');
+    if (roleBadgeElement) {
+        roleBadgeElement.innerText = userRole === 'admin' ? 'ADMINISTRATOR' : 'PETUGAS CABANG';
+    }
+
+    startLiveClock();
+
+    // VISIBILITAS MENU UNTUK ADMIN DAN PETUGAS CABANG
+    const navDashboard = document.getElementById('navDashboard');
+    const navForm = document.getElementById('navForm');
+    const navKelolaUser = document.getElementById('navKelolaUser');
+    const navTracker = document.getElementById('navTracker');
+
+    if (userRole === 'admin') {
+        if (navDashboard) navDashboard.style.display = 'block';
+        if (navForm) navForm.style.display = 'none';
+        if (navKelolaUser) navKelolaUser.style.display = 'block';
+        if (navTracker) navTracker.style.display = 'block';
+        switchTab('dashboard');
+    } else {
+        if (navDashboard) navDashboard.style.display = 'none';
+        if (navForm) navForm.style.display = 'block';
+        if (navKelolaUser) navKelolaUser.style.display = 'none';
+        if (navTracker) navTracker.style.display = 'none';
+        switchTab('form');
+    }
+
     const lokasiDropdown = document.getElementById('lokasi');
     if (lokasiDropdown && userRole === 'cabang' && userCabang !== 'all') {
         lokasiDropdown.value = userCabang;
         lokasiDropdown.style.pointerEvents = 'none';
         lokasiDropdown.style.backgroundColor = '#e9ecef';
     }
-
-    // 3. Memuat Statistik Dashboard
-    loadDashboardStats();
 });

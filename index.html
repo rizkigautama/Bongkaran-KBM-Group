@@ -11,8 +11,12 @@
     </script>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dashboard Bongkaran KBM</title>
+    
+    <!-- FAVICON / IKON TAB BROWSER -->
+    <link rel="icon" href="assets/img/KBM.png" type="image/png">
+
     <link rel="stylesheet" href="style.css">
     
     <!-- Chart.js CDN -->
@@ -24,55 +28,114 @@
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { display: flex; min-height: 100vh; background-color: #f4f6f9; overflow-x: hidden; }
+        body { display: flex; min-height: 100vh; background-color: #f0f2f5; overflow-x: hidden; }
 
-        /* Sidebar Kiri */
+        /* SIDEBAR DESAIN TERPUSAT & LOGO PRESISI CENTER */
         .sidebar {
-            width: 250px;
+            width: 260px;
             background-color: #1b5e20;
             color: white;
             display: flex;
             flex-direction: column;
-            padding: 20px 15px;
+            padding: 25px 18px;
             flex-shrink: 0;
-            transition: margin-left 0.3s ease;
+            transition: transform 0.3s ease, margin-left 0.3s ease;
             z-index: 1000;
+            min-height: 100vh;
         }
 
-        .sidebar.collapsed {
-            margin-left: -250px;
+        .sidebar.collapsed { margin-left: -260px; }
+
+        .sidebar-brand-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
         }
 
-        .sidebar-brand {
+        .brand-logo-circle {
+            width: 95px;
+            height: 95px;
+            background-color: #ffffff;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
+            justify-content: center;
+            padding: 0;
+            margin: 0 auto 14px auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
         }
-        .sidebar-brand img { height: 38px; }
-        .sidebar-brand h2 { font-size: 1.1rem; color: #fff; }
+
+        .brand-logo-circle img {
+            width: 82%;
+            height: 82%;
+            object-fit: contain;
+            display: block;
+            margin: auto;
+        }
+
+        .brand-title { font-size: 1.15rem; font-weight: 800; color: #ffffff; letter-spacing: 0.8px; margin-bottom: 2px; text-transform: uppercase; }
+        .brand-subtitle { font-size: 0.82rem; color: rgba(255, 255, 255, 0.85); font-weight: 400; }
 
         .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 8px; flex: 1; }
         .nav-item a {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 15px;
-            color: #d1e7dd;
+            padding: 12px 18px;
+            color: #ffffff;
             text-decoration: none;
-            border-radius: 8px;
+            border-radius: 16px;
             font-weight: 600;
             font-size: 0.95rem;
-            transition: all 0.2s ease;
-        }
-        .nav-item.active a, .nav-item a:hover {
-            background-color: #ffffff;
-            color: #1b5e20;
+            transition: all 0.25s ease;
         }
 
-        /* Container Main Wrapper */
+        .nav-item.active > a { background-color: #ffffff; color: #1b5e20; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        .nav-item a:hover:not(.active) { background-color: rgba(255, 255, 255, 0.15); color: #ffffff; }
+
+        .sub-menu {
+            list-style: none;
+            padding-left: 28px;
+            margin-top: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sub-nav-item a {
+            padding: 8px 14px;
+            font-size: 0.88rem;
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .sub-nav-item.active a {
+            background-color: #ffffff;
+            color: #1b5e20;
+            font-weight: bold;
+        }
+
+        .sidebar-footer { margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.15); }
+        .nav-logout {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 18px;
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 16px;
+            transition: all 0.25s ease;
+        }
+        .nav-logout:hover { background-color: rgba(220, 53, 69, 0.85); color: #ffffff; }
+
+        /* MAIN WRAPPER & STYLES */
         .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; width: 100%; min-height: 100vh; }
         .top-header {
             background: #fff;
@@ -81,6 +144,7 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            gap: 10px;
         }
         .top-header h1 { font-size: 1.3rem; color: #333; }
 
@@ -96,52 +160,145 @@
             align-items: center;
             transition: background-color 0.2s;
         }
-        .btn-toggle-sidebar:hover {
-            background-color: #2e7d32;
-        }
+        .btn-toggle-sidebar:hover { background-color: #2e7d32; }
 
         .content-body { padding: 25px 30px; flex: 1; display: flex; flex-direction: column; }
 
-        /* Stat Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-        .stat-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        .welcome-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 25px 30px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.04);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 20px;
         }
-        .stat-info p { font-size: 0.85rem; color: #6c757d; font-weight: 600; }
-        .stat-info h3 { font-size: 1.8rem; color: #212529; margin-top: 5px; }
-        .stat-icon { font-size: 2.2rem; }
 
-        /* Tab Sections */
+        .welcome-role-badge {
+            background-color: #20c997;
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 6px 14px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .welcome-title { font-size: 1.65rem; font-weight: 800; color: #212529; margin-bottom: 6px; }
+        .welcome-subtitle { font-size: 0.9rem; color: #6c757d; font-weight: 500; }
+
+        .clock-box {
+            background-color: #1b5e20;
+            color: #ffffff;
+            padding: 16px 28px;
+            border-radius: 18px;
+            text-align: center;
+            min-width: 210px;
+            box-shadow: 0 6px 15px rgba(27, 94, 32, 0.25);
+        }
+
+        .clock-time { font-size: 1.8rem; font-weight: 800; font-family: 'Segoe UI', monospace; letter-spacing: 1px; }
+        .clock-date { font-size: 0.85rem; color: rgba(255,255,255,0.85); margin-top: 4px; font-weight: 500; }
+
+        .vibrant-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .vibrant-card {
+            border-radius: 18px;
+            padding: 20px 22px;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+            transition: transform 0.2s ease;
+        }
+
+        .vibrant-card:hover { transform: translateY(-3px); }
+        .vibrant-card.blue { background-color: #0d6efd; }
+        .vibrant-card.green { background-color: #198754; }
+        .vibrant-card.yellow { background-color: #ffc107; color: #212529; }
+        .vibrant-card.red { background-color: #dc3545; }
+
+        .vibrant-info p { font-size: 0.85rem; font-weight: 600; opacity: 0.9; margin-bottom: 4px; }
+        .vibrant-info h3 { font-size: 2.2rem; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+        .vibrant-info span { font-size: 0.78rem; font-weight: 500; opacity: 0.85; }
+
+        .vibrant-icon-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .vibrant-card.yellow .vibrant-icon-circle { background-color: rgba(0, 0, 0, 0.1); }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .analytics-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 22px 25px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.04);
+        }
+
+        .analytics-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .analytics-title { font-size: 1.15rem; font-weight: 800; color: #212529; display: flex; align-items: center; gap: 8px; }
+        .analytics-pill { font-size: 0.75rem; font-weight: 700; padding: 4px 12px; border-radius: 12px; }
+        .analytics-pill.blue { background-color: #e7f1ff; color: #0d6efd; }
+        .analytics-pill.green { background-color: #e8f5e9; color: #198754; }
+
+        .analytics-subtitle { font-size: 0.82rem; color: #6c757d; margin-top: -14px; margin-bottom: 18px; }
+
+        .metrics-4grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .metric-box { background-color: #f8f9fa; border-radius: 14px; padding: 16px; text-align: center; }
+        .metric-value { font-size: 1.7rem; font-weight: 800; margin-bottom: 2px; }
+        .metric-label { font-size: 0.8rem; font-weight: 600; color: #6c757d; }
+
         .dashboard-section { display: none; }
         .dashboard-section.active { display: block; }
 
         .card-box {
             background: #fff;
-            border-radius: 12px;
+            border-radius: 18px;
             padding: 22px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 18px rgba(0,0,0,0.04);
             margin-bottom: 25px;
         }
-        .branch-title {
-            color: #1b5e20;
-            border-bottom: 2px solid #1b5e20;
-            padding-bottom: 6px;
-            margin-bottom: 12px;
-            font-size: 1.05rem;
-        }
 
-        /* Footer Style */
+        .branch-title { color: #1b5e20; border-bottom: 2px solid #1b5e20; padding-bottom: 6px; margin-bottom: 12px; font-size: 1.05rem; }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 999;
+        }
+        .sidebar-overlay.active { display: block; }
+
         .app-footer {
             margin-top: auto;
             padding: 20px 0 10px 0;
@@ -150,36 +307,91 @@
             font-size: 0.85rem;
             border-top: 1px solid #e0e0e0;
         }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; top: 0; left: 0; height: 100vh; box-shadow: 4px 0 15px rgba(0,0,0,0.2); }
+            .top-header { padding: 12px 15px; }
+            .top-header h1 { font-size: 1.05rem; }
+            .content-body { padding: 15px 12px; }
+            .welcome-card { flex-direction: column; align-items: stretch; text-align: center; }
+            .clock-box { width: 100%; }
+            .vibrant-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        }
+
+        @media (max-width: 480px) {
+            .vibrant-stats-grid { grid-template-columns: repeat(1, 1fr); }
+            .metrics-4grid { grid-template-columns: repeat(2, 1fr); }
+        }
     </style>
 </head>
 <body>
 
+    <!-- OVERLAY BACKDROP MOBILE -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
     <!-- SIDEBAR NAVIGATION -->
     <aside class="sidebar collapsed" id="appSidebar">
-        <div class="sidebar-brand">
-            <img src="assets/img/KBM.png" alt="Logo KBM">
-            <h2>Bongkaran KBM</h2>
+        <!-- HEADER LOGO KBM PRESISI CENTER -->
+        <div class="sidebar-brand-wrapper">
+            <div class="brand-logo-circle">
+                <img src="assets/img/KBM.png" alt="Logo KBM" onerror="this.onerror=null; this.src='assets/img/KBM%20.png';">
+            </div>
+            <h2 class="brand-title">Bongkaran KBM</h2>
+            <p class="brand-subtitle">Management System</p>
         </div>
+
+        <!-- DAFTAR MENU SIDEBAR -->
         <ul class="nav-menu">
-            <li class="nav-item active" id="navDashboard">
-                <a href="javascript:void(0)" onclick="switchTab('dashboard')">📈 Dashboard</a>
+            <li class="nav-item" id="navDashboard">
+                <a href="javascript:void(0)" onclick="switchTab('dashboard')">
+                    <span>📈</span><span>Dashboard</span>
+                </a>
             </li>
             <li class="nav-item" id="navForm">
-                <a href="javascript:void(0)" onclick="switchTab('form')">📋 Form Input Laporan</a>
+                <a href="javascript:void(0)" onclick="switchTab('form')">
+                    <span>📋</span><span>Form Input Laporan</span>
+                </a>
             </li>
             <li class="nav-item" id="navRiwayat">
-                <a href="javascript:void(0)" onclick="switchTab('riwayat')">📂 Riwayat Dokumen</a>
+                <a href="javascript:void(0)" onclick="switchTab('riwayat')">
+                    <span>📂</span><span>Riwayat Dokumen</span>
+                </a>
+            </li>
+
+            <!-- MENU DROPDOWN KELOLA USER (KHUSUS ADMINISTRATOR) -->
+            <li class="nav-item" id="navKelolaUser" style="display: none;">
+                <a href="javascript:void(0)" onclick="toggleSubMenu('subMenuUser')">
+                    <span>⚙️</span><span>Kelola User</span>
+                    <span style="margin-left: auto; font-size: 0.75rem;">▼</span>
+                </a>
+                <ul class="sub-menu" id="subMenuUser" style="display: none;">
+                    <li class="sub-nav-item" id="subDaftarUser">
+                        <a href="javascript:void(0)" onclick="switchTab('daftar-user')">
+                            <span>👥</span><span>Daftar User</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            <li class="nav-item" id="navTracker" style="display: none;">
+                <a href="javascript:void(0)" onclick="switchTab('tracker')">
+                    <span>🔐</span><span>Tracker Login User</span>
+                </a>
             </li>
         </ul>
+
+        <div class="sidebar-footer">
+            <a href="javascript:void(0)" onclick="logout()" class="nav-logout">
+                <span>🚪</span><span>Logout</span>
+            </a>
+        </div>
     </aside>
 
     <!-- KONTEN UTAMA -->
     <div class="main-wrapper">
         <header class="top-header">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <button type="button" class="btn-toggle-sidebar" onclick="toggleSidebar()" title="Sembunyikan/Tampilkan Menu">
-                    ☰
-                </button>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button type="button" class="btn-toggle-sidebar" onclick="toggleSidebar()" title="Sembunyikan/Tampilkan Menu">☰</button>
                 <div>
                     <h1>Dashboard Pekerjaan Bongkaran</h1>
                     <p style="font-size: 0.9rem; color: #6c757d;">
@@ -188,50 +400,87 @@
                 </div>
             </div>
 
-            <!-- TOMBOL LOGOUT ATAS -->
-            <button type="button" onclick="logout()" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-                🚪 Keluar / Logout
+            <button type="button" onclick="logout()" style="background-color: #dc3545; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+                🚪 Keluar
             </button>
         </header>
 
         <div class="content-body">
 
-            <!-- TAB 1: DASHBOARD RINGKASAN & GRAFIK -->
-            <section id="sectionDashboard" class="dashboard-section active">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-info"><p>Laporan Hari Ini</p><h3 id="statHariIni">0</h3></div>
-                        <div class="stat-icon">👥</div>
+            <!-- TAB 1: DASHBOARD -->
+            <section id="sectionDashboard" class="dashboard-section">
+                <div class="welcome-card">
+                    <div>
+                        <div class="welcome-role-badge" id="dashRoleBadge">ADMINISTRATOR</div>
+                        <h2 class="welcome-title">Selamat Datang, <span id="welcomeUserName">User</span> 👋</h2>
+                        <p class="welcome-subtitle">Dashboard Monitoring Pekerjaan Bongkaran KBM Group</p>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-info"><p>Laporan Bulan Ini</p><h3 id="statBulanIni">0</h3></div>
-                        <div class="stat-icon">📅</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-info"><p>Cabang Aktif</p><h3 id="statTotalCabang">4</h3></div>
-                        <div class="stat-icon">🏥</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-info"><p>Total Dokumen (.docx)</p><h3 id="statTotalDokumen">0</h3></div>
-                        <div class="stat-icon">📄</div>
+                    <div class="clock-box">
+                        <div class="clock-time" id="liveClockTime">00:00:00</div>
+                        <div class="clock-date" id="liveClockDate">Memuat tanggal...</div>
                     </div>
                 </div>
 
-                <!-- KARTU GRAFIK -->
+                <div class="vibrant-stats-grid">
+                    <div class="vibrant-card blue">
+                        <div class="vibrant-info"><p>Hari Ini</p><h3 id="statHariIni">0</h3><span>Laporan Masuk</span></div>
+                        <div class="vibrant-icon-circle">👥</div>
+                    </div>
+                    <div class="vibrant-card green">
+                        <div class="vibrant-info"><p>Cabang Aktif</p><h3 id="statTotalCabang">6</h3><span>Lokasi Klinik</span></div>
+                        <div class="vibrant-icon-circle">📍</div>
+                    </div>
+                    <div class="vibrant-card yellow">
+                        <div class="vibrant-info"><p>Menunggu</p><h3 id="statMenunggu">0</h3><span>Butuh Verifikasi</span></div>
+                        <div class="vibrant-icon-circle">⏳</div>
+                    </div>
+                    <div class="vibrant-card red">
+                        <div class="vibrant-info"><p>Total Dokumen</p><h3 id="statTotalDokumen">0</h3><span>Dokumen (.docx)</span></div>
+                        <div class="vibrant-icon-circle">📄</div>
+                    </div>
+                </div>
+
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <div class="analytics-header">
+                            <div class="analytics-title">📅 Statistik Hari Ini</div>
+                            <span class="analytics-pill blue">Hari Ini</span>
+                        </div>
+                        <p class="analytics-subtitle" id="subtextDateHariIni">Monitoring aktivitas laporan hari ini</p>
+                        <div class="metrics-4grid">
+                            <div class="metric-box"><div class="metric-value" style="color: #0d6efd;" id="metricTodayTotal">0</div><div class="metric-label">Total</div></div>
+                            <div class="metric-box"><div class="metric-value" style="color: #198754;" id="metricTodayValid">0</div><div class="metric-label">Terverifikasi</div></div>
+                            <div class="metric-box"><div class="metric-value" style="color: #ffc107;" id="metricTodayPending">0</div><div class="metric-label">Menunggu</div></div>
+                            <div class="metric-box"><div class="metric-value" style="color: #dc3545;" id="metricTodayRejected">0</div><div class="metric-label">Ditolak</div></div>
+                        </div>
+                    </div>
+
+                    <div class="analytics-card">
+                        <div class="analytics-header">
+                            <div class="analytics-title">📊 Statistik Keseluruhan</div>
+                            <span class="analytics-pill green">All Time</span>
+                        </div>
+                        <p class="analytics-subtitle">Seluruh data laporan bongkaran KBM</p>
+                        <div class="metrics-4grid">
+                            <div class="metric-box"><div class="metric-value" style="color: #0d6efd;" id="metricAllTotal">0</div><div class="metric-label">Total</div></div>
+                            <div class="metric-box"><div class="metric-value" style="color: #198754;" id="metricAllValid">0</div><div class="metric-label">Terverifikasi</div></div>
+                            <div class="metric-box"><div class="metric-value" style="color: #ffc107;" id="metricAllPending">0</div><div class="metric-label">Menunggu</div></div>
+                            <div class="metric-box"><div class="metric-value" style="color: #dc3545;" id="metricAllRejected">0</div><div class="metric-label">Ditolak</div></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card-box">
                     <h3 style="font-size: 1.1rem; color: #333; margin-bottom: 15px;">📈 Grafik Laporan Pekerjaan 7 Hari Terakhir</h3>
                     <canvas id="laporanChart" style="max-height: 320px;"></canvas>
                 </div>
 
-                <!-- KARTU LAPORAN TERBARU -->
                 <div class="card-box">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                         <h3 style="font-size: 1.1rem; color: #1b5e20;">📌 Aktivitas Laporan Terbaru</h3>
-                        <button type="button" onclick="switchTab('riwayat')" style="background-color: #1b5e20; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">
-                            Lihat Semua Riwayat ➔
-                        </button>
+                        <button type="button" onclick="switchTab('riwayat')" style="background-color: #1b5e20; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">Lihat Semua Riwayat ➔</button>
                     </div>
-                    <div style="overflow-x: auto;">
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
                             <thead>
                                 <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
@@ -244,9 +493,7 @@
                                     <th style="padding: 10px; width: 100px; text-align: center;">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="tableBody_RecentDashboard">
-                                <tr><td colspan="7" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data laporan terbaru...</td></tr>
-                            </tbody>
+                            <tbody id="tableBody_RecentDashboard"><tr><td colspan="7" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -269,9 +516,14 @@
                         </div>
 
                         <div class="form-group" style="margin-bottom:15px;">
-                            <label style="display:block; font-weight:bold; margin-bottom:5px;">Jabatan</label>
-                            <select id="jabatan" name="jabatan" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
-                                <option value="" disabled selected>Pilih Jabatan...</option>
+                            <label style="display:block; font-weight:bold; margin-bottom:5px;">Gelar Akademik / Profesi (Opsional)</label>
+                            <input type="text" id="gelar" name="gelar" placeholder="Contoh: S.Kom, A.Md.Kep, dr., S.Kep, Ns." style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="display:block; font-weight:bold; margin-bottom:5px;">Divisi</label>
+                            <select id="divisi" name="divisi" required style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;">
+                                <option value="" disabled selected>Pilih Divisi...</option>
                                 <option value="Pendaftaran">Pendaftaran</option>
                                 <option value="Sarpras">Sarpras</option>
                                 <option value="Rekam Medis">Rekam Medis</option>
@@ -308,6 +560,8 @@
                                 <option value="KBM Panjaitan">KBM Panjaitan</option>
                                 <option value="KBM Pajajaran">KBM Pajajaran</option>
                                 <option value="KBM Pasuruan">KBM Pasuruan</option>
+                                <option value="DPP dr Dita (Sardo)">DPP dr Dita (Sardo)</option>
+                                <option value="DPP dr Eko (Cakra)">DPP dr Eko (Cakra)</option>
                             </select>
                         </div>
 
@@ -318,19 +572,16 @@
 
                         <div class="form-group" style="margin-bottom:20px;">
                             <label style="display:block; font-weight:bold; margin-bottom:10px;">Dokumentasi Kamera</label>
-
                             <div style="margin-bottom: 12px;">
                                 <p style="font-size:0.9rem; font-weight:bold;">Foto Sebelum (Before)</p>
                                 <button type="button" onclick="openCamera('before')" style="background:#28a745; color:white; border:none; padding:8px 14px; border-radius:4px; cursor:pointer; margin-top:4px;">📷 Ambil Foto Before</button>
                                 <div id="previewContainerBefore" class="preview-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;"></div>
                             </div>
-
                             <div style="margin-bottom: 12px;">
                                 <p style="font-size:0.9rem; font-weight:bold;">Foto Proses (Progress)</p>
                                 <button type="button" onclick="openCamera('proses')" style="background:#28a745; color:white; border:none; padding:8px 14px; border-radius:4px; cursor:pointer; margin-top:4px;">📷 Ambil Foto Proses</button>
                                 <div id="previewContainerProses" class="preview-container" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;"></div>
                             </div>
-
                             <div style="margin-bottom: 12px;">
                                 <p style="font-size:0.9rem; font-weight:bold;">Foto Sesudah (After)</p>
                                 <button type="button" onclick="openCamera('after')" style="background:#28a745; color:white; border:none; padding:8px 14px; border-radius:4px; cursor:pointer; margin-top:4px;">📷 Ambil Foto After</button>
@@ -343,95 +594,120 @@
                 </div>
             </section>
 
-            <!-- TAB 3: RIWAYAT DOKUMEN PER CABANG -->
+            <!-- TAB 3: RIWAYAT DOKUMEN -->
             <section id="sectionRiwayat" class="dashboard-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="color: #333;">Riwayat Upload Dokumen Per Cabang</h2>
-                    <button type="button" onclick="loadRiwayat()" style="background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;">
-                        🔄 Refresh Tabel
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                    <h2 style="color: #333; font-size: 1.2rem;">Riwayat Upload Dokumen Per Cabang</h2>
+                    <button type="button" onclick="loadRiwayat()" style="background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;">🔄 Refresh Tabel</button>
+                </div>
+
+                <div class="card-box" style="margin-bottom: 20px; padding: 15px 20px; border-left: 4px solid #1b5e20;">
+                    <div class="filter-bar-inner" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+                        <div class="filter-bar-group" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                            <label style="font-weight: bold; font-size: 0.88rem; color: #333; white-space: nowrap;">📅 Mulai:</label>
+                            <input type="date" id="filterTanggalMulai" style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.88rem;">
+                        </div>
+                        <div class="filter-bar-group" style="display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                            <label style="font-weight: bold; font-size: 0.88rem; color: #333; white-space: nowrap;">s/d</label>
+                            <input type="date" id="filterTanggalSelesai" style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.88rem;">
+                        </div>
+                        <div class="filter-bar-group" style="display: flex; gap: 8px;">
+                            <button type="button" onclick="loadRiwayat()" style="background-color: #1b5e20; color: white; border: none; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; white-space: nowrap;">🔍 Filter</button>
+                            <button type="button" onclick="resetFilterTanggal()" style="background-color: #6c757d; color: white; border: none; padding: 7px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; white-space: nowrap;">🔄 Reset</button>
+                        </div>
+                        <div class="filter-bar-group" style="display: flex; align-items: center; gap: 8px; white-space: nowrap; margin-left: auto;">
+                            <input type="text" id="filterSearchKey" oninput="loadRiwayat()" placeholder="🔎 Cari nama / file..." style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.88rem; width: 100%; min-width: 200px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-box"><h3 class="branch-title">🏥 KBM Jaksa Agung</h3><div style="overflow-x: auto; -webkit-overflow-scrolling: touch;"><table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;"><thead><tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;"><th style="padding: 10px; width: 40px; text-align: center;">No</th><th style="padding: 10px; width: 230px; white-space: nowrap;">Petugas</th><th style="padding: 10px; width: 120px; white-space: nowrap;">Tanggal</th><th style="padding: 10px;">Nama Dokumen (.docx)</th><th style="padding: 10px; width: 160px; white-space: nowrap;">Waktu Upload</th><th style="padding: 10px; width: 140px; text-align: center;">Status</th><th style="padding: 10px; width: 280px; text-align: center;">Aksi</th></tr></thead><tbody id="tableBody_JaksaAgung"><tr><td colspan="7" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr></tbody></table></div></div>
+                <div class="card-box"><h3 class="branch-title">🏥 KBM Panjaitan</h3><div style="overflow-x: auto; -webkit-overflow-scrolling: touch;"><table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;"><thead><tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;"><th style="padding: 10px; width: 40px; text-align: center;">No</th><th style="padding: 10px; width: 230px; white-space: nowrap;">Petugas</th><th style="padding: 10px; width: 120px; white-space: nowrap;">Tanggal</th><th style="padding: 10px;">Nama Dokumen (.docx)</th><th style="padding: 10px; width: 160px; white-space: nowrap;">Waktu Upload</th><th style="padding: 10px; width: 140px; text-align: center;">Status</th><th style="padding: 10px; width: 280px; text-align: center;">Aksi</th></tr></thead><tbody id="tableBody_Panjaitan"><tr><td colspan="7" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr></tbody></table></div></div>
+                <div class="card-box"><h3 class="branch-title">🏥 KBM Pajajaran</h3><div style="overflow-x: auto; -webkit-overflow-scrolling: touch;"><table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;"><thead><tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;"><th style="padding: 10px; width: 40px; text-align: center;">No</th><th style="padding: 10px; width: 230px; white-space: nowrap;">Petugas</th><th style="padding: 10px; width: 120px; white-space: nowrap;">Tanggal</th><th style="padding: 10px;">Nama Dokumen (.docx)</th><th style="padding: 10px; width: 160px; white-space: nowrap;">Waktu Upload</th><th style="padding: 10px; width: 140px; text-align: center;">Status</th><th style="padding: 10px; width: 280px; text-align: center;">Aksi</th></tr></thead><tbody id="tableBody_Pajajaran"><tr><td colspan="7" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr></tbody></table></div></div>
+                <div class="card-box"><h3 class="branch-title">🏥 KBM Pasuruan</h3><div style="overflow-x: auto; -webkit-overflow-scrolling: touch;"><table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;"><thead><tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;"><th style="padding: 10px; width: 40px; text-align: center;">No</th><th style="padding: 10px; width: 230px; white-space: nowrap;">Petugas</th><th style="padding: 10px; width: 120px; white-space: nowrap;">Tanggal</th><th style="padding: 10px;">Nama Dokumen (.docx)</th><th style="padding: 10px; width: 160px; white-space: nowrap;">Waktu Upload</th><th style="padding: 10px; width: 140px; text-align: center;">Status</th><th style="padding: 10px; width: 280px; text-align: center;">Aksi</th></tr></thead><tbody id="tableBody_Pasuruan"><tr><td colspan="7" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr></tbody></table></div></div>
+                <div class="card-box"><h3 class="branch-title">🏥 DPP dr Dita (Sardo)</h3><div style="overflow-x: auto; -webkit-overflow-scrolling: touch;"><table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;"><thead><tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;"><th style="padding: 10px; width: 40px; text-align: center;">No</th><th style="padding: 10px; width: 230px; white-space: nowrap;">Petugas</th><th style="padding: 10px; width: 120px; white-space: nowrap;">Tanggal</th><th style="padding: 10px;">Nama Dokumen (.docx)</th><th style="padding: 10px; width: 160px; white-space: nowrap;">Waktu Upload</th><th style="padding: 10px; width: 140px; text-align: center;">Status</th><th style="padding: 10px; width: 280px; text-align: center;">Aksi</th></tr></thead><tbody id="tableBody_DitaSardo"><tr><td colspan="7" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr></tbody></table></div></div>
+                <div class="card-box"><h3 class="branch-title">🏥 DPP dr Eko (Cakra)</h3><div style="overflow-x: auto; -webkit-overflow-scrolling: touch;"><table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;"><thead><tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;"><th style="padding: 10px; width: 40px; text-align: center;">No</th><th style="padding: 10px; width: 230px; white-space: nowrap;">Petugas</th><th style="padding: 10px; width: 120px; white-space: nowrap;">Tanggal</th><th style="padding: 10px;">Nama Dokumen (.docx)</th><th style="padding: 10px; width: 160px; white-space: nowrap;">Waktu Upload</th><th style="padding: 10px; width: 140px; text-align: center;">Status</th><th style="padding: 10px; width: 280px; text-align: center;">Aksi</th></tr></thead><tbody id="tableBody_EkoCakra"><tr><td colspan="7" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr></tbody></table></div></div>
+            </section>
+
+            <!-- TAB 4: KELOLA USER / DAFTAR USER -->
+            <section id="sectionKelolaUser" class="dashboard-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                    <h2 style="color: #333; font-size: 1.2rem;">👥 Kelola Pengguna & Hak Akses Cabang</h2>
+                    <button type="button" onclick="openModalTambahUser()" style="background-color: #1b5e20; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem;">
+                        ➕ Tambah User Baru
                     </button>
                 </div>
 
                 <div class="card-box">
-                    <h3 class="branch-title">🏥 KBM Jaksa Agung</h3>
-                    <div style="overflow-x: auto;">
+                    <h3 style="font-size: 1.05rem; color: #1b5e20; margin-bottom: 15px; border-bottom: 2px solid #1b5e20; padding-bottom: 5px;">
+                        📋 Daftar User Terdaftar
+                    </h3>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
                             <thead>
                                 <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
                                     <th style="padding: 10px; width: 40px; text-align: center;">No</th>
-                                    <th style="padding: 10px; width: 160px;">Petugas</th>
-                                    <th style="padding: 10px;">Nama Dokumen (.docx)</th>
-                                    <th style="padding: 10px; width: 160px;">Waktu Upload</th>
-                                    <th style="padding: 10px; width: 140px; text-align: center;">Status</th>
-                                    <th style="padding: 10px; width: 280px; text-align: center;">Aksi</th>
+                                    <th style="padding: 10px; width: 60px; text-align: center;">Foto</th>
+                                    <th style="padding: 10px; width: 200px; white-space: nowrap;">Nama Lengkap</th>
+                                    <th style="padding: 10px; width: 200px;">Email Login</th>
+                                    <th style="padding: 10px; width: 130px;">Role / Peran</th>
+                                    <th style="padding: 10px; width: 160px; white-space: nowrap;">Cabang Klinik</th>
+                                    <th style="padding: 10px; width: 220px; text-align: center;">Aksi (Profil / Reset / Hapus)</th>
                                 </tr>
                             </thead>
-                            <tbody id="tableBody_JaksaAgung">
-                                <tr><td colspan="6" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
+                            <tbody id="tableBody_DaftarUser">
+                                <tr><td colspan="7" style="text-align: center; padding: 15px; color: #6c757d;">Memuat daftar user...</td></tr>
                             </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: TRACKER LOGIN & AKTIVITAS -->
+            <section id="sectionTracker" class="dashboard-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                    <h2 style="color: #333; font-size: 1.2rem;">🔐 Tracker Riwayat Aktivitas & Login User</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" onclick="loadLoginTracker()" style="background-color: #1b5e20; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem;">🔄 Refresh Log</button>
+                        <button type="button" onclick="clearLoginTracker()" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem;">🗑️ Bersihkan Semua Log</button>
+                    </div>
+                </div>
+
+                <div class="card-box" style="margin-bottom: 25px;">
+                    <h3 style="font-size: 1.05rem; color: #1b5e20; margin-bottom: 15px; border-bottom: 2px solid #1b5e20; padding-bottom: 5px;">📌 Log Aktivitas Pengguna (Submit / Verifikasi / Hapus / Preview)</h3>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                            <thead>
+                                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                                    <th style="padding: 10px; width: 40px; text-align: center;">No</th>
+                                    <th style="padding: 10px; width: 230px; white-space: nowrap;">Pengguna & Cabang</th>
+                                    <th style="padding: 10px; width: 150px;">Jenis Aksi</th>
+                                    <th style="padding: 10px;">Detail Aktivitas</th>
+                                    <th style="padding: 10px; width: 170px; white-space: nowrap;">Waktu</th>
+                                    <th style="padding: 10px; width: 110px; text-align: center;">Perangkat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody_ActivityTracker"><tr><td colspan="6" style="text-align: center; padding: 15px; color: #6c757d;">Memuat log aktivitas...</td></tr></tbody>
                         </table>
                     </div>
                 </div>
 
                 <div class="card-box">
-                    <h3 class="branch-title">🏥 KBM Panjaitan</h3>
-                    <div style="overflow-x: auto;">
+                    <h3 style="font-size: 1.05rem; color: #1b5e20; margin-bottom: 15px; border-bottom: 2px solid #1b5e20; padding-bottom: 5px;">🔑 Log Riwayat Sesi Login</h3>
+                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
                             <thead>
                                 <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
                                     <th style="padding: 10px; width: 40px; text-align: center;">No</th>
-                                    <th style="padding: 10px; width: 160px;">Petugas</th>
-                                    <th style="padding: 10px;">Nama Dokumen (.docx)</th>
-                                    <th style="padding: 10px; width: 160px;">Waktu Upload</th>
-                                    <th style="padding: 10px; width: 140px; text-align: center;">Status</th>
-                                    <th style="padding: 10px; width: 280px; text-align: center;">Aksi</th>
+                                    <th style="padding: 10px; width: 230px; white-space: nowrap;">Nama Pengguna</th>
+                                    <th style="padding: 10px; width: 200px;">Email</th>
+                                    <th style="padding: 10px; width: 130px;">Peran</th>
+                                    <th style="padding: 10px; width: 160px; white-space: nowrap;">Cabang Klinik</th>
+                                    <th style="padding: 10px; width: 170px; white-space: nowrap;">Waktu Login</th>
+                                    <th style="padding: 10px; width: 110px; text-align: center;">Perangkat</th>
                                 </tr>
                             </thead>
-                            <tbody id="tableBody_Panjaitan">
-                                <tr><td colspan="6" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="card-box">
-                    <h3 class="branch-title">🏥 KBM Pajajaran</h3>
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
-                            <thead>
-                                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                                    <th style="padding: 10px; width: 40px; text-align: center;">No</th>
-                                    <th style="padding: 10px; width: 160px;">Petugas</th>
-                                    <th style="padding: 10px;">Nama Dokumen (.docx)</th>
-                                    <th style="padding: 10px; width: 160px;">Waktu Upload</th>
-                                    <th style="padding: 10px; width: 140px; text-align: center;">Status</th>
-                                    <th style="padding: 10px; width: 280px; text-align: center;">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody_Pajajaran">
-                                <tr><td colspan="6" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="card-box">
-                    <h3 class="branch-title">🏥 KBM Pasuruan</h3>
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
-                            <thead>
-                                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                                    <th style="padding: 10px; width: 40px; text-align: center;">No</th>
-                                    <th style="padding: 10px; width: 160px;">Petugas</th>
-                                    <th style="padding: 10px;">Nama Dokumen (.docx)</th>
-                                    <th style="padding: 10px; width: 160px;">Waktu Upload</th>
-                                    <th style="padding: 10px; width: 140px; text-align: center;">Status</th>
-                                    <th style="padding: 10px; width: 280px; text-align: center;">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody_Pasuruan">
-                                <tr><td colspan="6" style="text-align: center; padding: 15px; color: #6c757d;">Memuat data...</td></tr>
-                            </tbody>
+                            <tbody id="tableBody_LoginTracker"><tr><td colspan="7" style="text-align: center; padding: 15px; color: #6c757d;">Memuat log login...</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -439,12 +715,92 @@
 
             <!-- FOOTER COPYRIGHT -->
             <footer class="app-footer">
-                Hak Cipta &copy; Rizki Gautama 2026 Bongkaran KBM. All Rights Reserved.<br>
+                Hak Cipta &copy; Rizki Gautama S.Kom 2026 Bongkaran KBM. All Rights Reserved.<br>
                 <span style="font-size: 0.8rem; color: #888;">Aplikasi Bongkaran KBM Group v1.0</span>
             </footer>
 
         </div>
     </div>
+
+    <!-- MODAL POPUP PROFIL PETUGAS -->
+    <div id="adminUserProfileModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:9999;">
+        <div style="background:#fff; padding:22px; border-radius:12px; width:90%; max-width:450px; text-align:center;">
+            <h3 style="margin-bottom:15px; color:#1b5e20; font-size:1.1rem;">👤 Profil Petugas</h3>
+            <div style="margin: 0 auto 15px auto; width:110px; height:110px; border-radius:50%; border:3px solid #1b5e20; overflow:hidden; background:#f8f9fa;">
+                <img id="adminUserModalAvatar" src="assets/img/KBM.png" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null; this.src='assets/img/KBM%20.png';">
+            </div>
+            <h4 id="adminUserModalNama" style="color:#212529; font-size:1.15rem; margin-bottom:4px;">Nama User</h4>
+            <p id="adminUserModalEmail" style="color:#6c757d; font-size:0.85rem; margin-bottom:4px;">email@domain.com</p>
+            <p id="adminUserModalCabang" style="color:#1b5e20; font-weight:bold; font-size:0.88rem; margin-bottom:15px;">🏥 Lokasi Cabang</p>
+            
+            <div style="display:flex; justify-content:center; gap:10px;">
+                <label for="adminUserPhotoInput" style="background-color:#1b5e20; color:white; padding:8px 14px; border-radius:6px; font-size:0.82rem; font-weight:bold; cursor:pointer;">
+                    📷 Ganti Foto User Ini
+                </label>
+                <input type="file" id="adminUserPhotoInput" accept="image/*" style="display:none;" onchange="uploadPhotoForSelectedUser(event)">
+                <button type="button" onclick="closeAdminUserProfileModal()" style="background:#6c757d; color:white; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; cursor:pointer;">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH USER BARU -->
+<div id="userModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:9999;">
+    <div style="background:#fff; padding:22px; border-radius:12px; width:90%; max-width:450px;">
+        <h3 style="margin-bottom:15px; color:#1b5e20; font-size:1.1rem;">➕ Tambah Pengguna Baru</h3>
+        <form id="addUserForm">
+            <!-- NAMA LENGKAP -->
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:0.85rem; font-weight:bold; margin-bottom:4px;">Nama Lengkap</label>
+                <input type="text" id="addNama" required placeholder="Nama Petugas / Administrator" style="width:100%; padding:8px 10px; border:1px solid #ccc; border-radius:6px;">
+            </div>
+
+            <!-- PENAMBAHAN FIELD GELAR (OPSIONAL) -->
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:0.85rem; font-weight:bold; margin-bottom:4px;">Gelar Akademik / Profesi (Opsional)</label>
+                <input type="text" id="addGelar" placeholder="Contoh: S.Kom, A.Md.Kep, dr., S.Kep, Ns." style="width:100%; padding:8px 10px; border:1px solid #ccc; border-radius:6px;">
+            </div>
+
+            <!-- EMAIL LOGIN -->
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:0.85rem; font-weight:bold; margin-bottom:4px;">Email Login</label>
+                <input type="email" id="addEmail" required placeholder="user@klinikbungamelati.com" style="width:100%; padding:8px 10px; border:1px solid #ccc; border-radius:6px;">
+            </div>
+
+            <!-- KATA SANDI -->
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:0.85rem; font-weight:bold; margin-bottom:4px;">Kata Sandi (Password)</label>
+                <input type="password" id="addPass" required placeholder="••••••••" style="width:100%; padding:8px 10px; border:1px solid #ccc; border-radius:6px;">
+            </div>
+
+            <!-- PERAN / ROLE -->
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:0.85rem; font-weight:bold; margin-bottom:4px;">Peran (Role)</label>
+                <select id="addRole" required onchange="handleRoleChangeInModal()" style="width:100%; padding:8px 10px; border:1px solid #ccc; border-radius:6px;">
+                    <option value="cabang">Petugas Cabang</option>
+                    <option value="admin">Administrator</option>
+                </select>
+            </div>
+
+            <!-- CABANG KLINIK -->
+            <div style="margin-bottom:18px;">
+                <label style="display:block; font-size:0.85rem; font-weight:bold; margin-bottom:4px;">Cabang Klinik</label>
+                <select id="addCabang" required style="width:100%; padding:8px 10px; border:1px solid #ccc; border-radius:6px;">
+                    <option value="KBM Jaksa Agung">KBM Jaksa Agung</option>
+                    <option value="KBM Panjaitan">KBM Panjaitan</option>
+                    <option value="KBM Pajajaran">KBM Pajajaran</option>
+                    <option value="KBM Pasuruan">KBM Pasuruan</option>
+                    <option value="DPP dr Dita (Sardo)">DPP dr Dita (Sardo)</option>
+                    <option value="DPP dr Eko (Cakra)">DPP dr Eko (Cakra)</option>
+                </select>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" onclick="closeUserModal()" style="background:#6c757d; color:white; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; cursor:pointer;">Batal</button>
+                <button type="submit" style="background:#1b5e20; color:white; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; cursor:pointer;">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
 
     <!-- MODAL KAMERA -->
     <div id="cameraModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:9999;">
@@ -462,9 +818,9 @@
     <div id="previewModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:9999;">
         <div style="background:#fff; padding:20px; border-radius:12px; width:90%; max-width:850px; height:85vh; display:flex; flex-direction:column;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #ddd; padding-bottom:10px;">
-                <h3 style="font-size:1.1rem; color:#1b5e20; margin:0;">👁️ Pratinjau Dokumen Laporan</h3>
+                <h3 style="font-size:1.1rem; color:#1b5e20; margin:0;">👁️ Pratinjau Dokumen</h3>
                 <div>
-                    <a id="previewDownloadBtn" href="#" target="_blank" download style="background-color:#0d6efd; color:white; padding:6px 12px; text-decoration:none; border-radius:6px; font-size:0.85rem; font-weight:bold; margin-right:8px;">📥 Unduh File</a>
+                    <a id="previewDownloadBtn" href="#" target="_blank" download style="background-color:#0d6efd; color:white; padding:6px 12px; text-decoration:none; border-radius:6px; font-size:0.85rem; font-weight:bold; margin-right:8px;">📥 Unduh</a>
                     <button type="button" onclick="closePreviewModal()" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">✕ Tutup</button>
                 </div>
             </div>
@@ -479,15 +835,22 @@
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('appSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
             if (sidebar) {
                 sidebar.classList.toggle('collapsed');
+                if (overlay) {
+                    if (sidebar.classList.contains('collapsed')) {
+                        overlay.classList.remove('active');
+                    } else {
+                        overlay.classList.add('active');
+                    }
+                }
             }
         }
 
         function logout() {
             if (confirm('Apakah Anda yakin ingin keluar?')) {
                 sessionStorage.clear();
-                localStorage.clear();
                 window.location.href = 'login.html';
             }
         }
